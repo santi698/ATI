@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.VBox?>
+
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="480.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+   <center>
+      <HBox BorderPane.alignment="CENTER">
+         <children>
+            <AnchorPane>
+               <children>
+                  <ImageView fx:id="img1" fitHeight="150.0" fitWidth="200.0" layoutX="4.0" layoutY="125.0" pickOnBounds="true" preserveRatio="true" AnchorPane.bottomAnchor="125.0" AnchorPane.topAnchor="125.0" />
+               </children>
+            </AnchorPane>
+            <AnchorPane>
+               <children>
+                  <ImageView fx:id="img2" fitHeight="150.0" fitWidth="200.0" layoutX="4.0" layoutY="125.0" pickOnBounds="true" preserveRatio="true" AnchorPane.bottomAnchor="125.0" AnchorPane.topAnchor="125.0" />
+                  <Button layoutX="36.0" layoutY="100.0" mnemonicParsing="false" onAction="#loadImg2" text="Cargar imagen 2..." />
+               </children>
+            </AnchorPane>
+            <AnchorPane>
+               <children>
+                  <ImageView fx:id="result" fitHeight="150.0" fitWidth="200.0" layoutX="4.0" layoutY="125.0" pickOnBounds="true" preserveRatio="true" AnchorPane.bottomAnchor="125.0" AnchorPane.topAnchor="125.0" />
+               </children>
+            </AnchorPane>
+         </children>
+      </HBox>
+   </center>
+   <bottom>
+      <AnchorPane prefHeight="100.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+         <children>
+            <Button layoutX="464.0" layoutY="165.0" mnemonicParsing="false" onAction="#handleCancel" text="Cancelar" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="80.0" />
+            <Button layoutX="540.0" layoutY="165.0" mnemonicParsing="false" onAction="#handleAccept" text="Aceptar" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="0.0" />
+         </children>
+         <BorderPane.margin>
+            <Insets right="10.0" />
+         </BorderPane.margin>
+      </AnchorPane>
+   </bottom>
+   <top>
+      <ChoiceBox fx:id="operation" BorderPane.alignment="CENTER" />
+   </top>
+</BorderPane>

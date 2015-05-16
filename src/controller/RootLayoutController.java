@@ -58,6 +58,8 @@ public class RootLayoutController {
 	@FXML
 	private ImageView imageView;
 	@FXML
+	private ImageView overlayImage;
+	@FXML
 	private TextArea infoLabel;
 	
 	private Main mainApp;
@@ -457,6 +459,9 @@ public class RootLayoutController {
 		updateHistogram();
 		if (undoList.size() > 20) 
 			undoList.removeFirst();
+	}
+	public void setOverlay(Mat img) {
+		overlayImage.setImage(matToImage(img));
 	}
 	public void showImageNewWindow(Mat img, String title) {
 		//TODO

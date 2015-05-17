@@ -115,11 +115,11 @@
                 <MenuItem mnemonicParsing="false" onAction="#genColorscale" text="Degradado de colores" />
               </items>
             </Menu>
-          </items>
-        </Menu>
-        <Menu mnemonicParsing="false" text="Ayuda">
-          <items>
-            <MenuItem mnemonicParsing="false" text="Acerca de..." />
+            <Menu mnemonicParsing="false" text="Ayuda">
+                <items>
+                    <MenuItem mnemonicParsing="false" text="Acerca de..." />
+                </items>
+            </Menu>
           </items>
         </Menu>
       </menus>

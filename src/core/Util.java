@@ -333,8 +333,10 @@ public class Util {
 	}
 	public static BufferedImage matToBufferedImage(Mat m){
         int type = BufferedImage.TYPE_BYTE_GRAY;
-        if ( m.channels() > 1 ) {
+        if ( m.channels() == 3 ) {
             type = BufferedImage.TYPE_3BYTE_BGR;
+        } else if (m.channels() == 4) {
+        	type = BufferedImage.TYPE_4BYTE_ABGR;
         }
         int bufferSize = m.channels()*m.cols()*m.rows();
         byte[] b = new byte[bufferSize];

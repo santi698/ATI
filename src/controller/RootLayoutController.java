@@ -8,6 +8,8 @@ import java.util.LinkedList;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import core.border.BorderSegmentation;
+import core.masks.Susan;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
@@ -435,6 +437,17 @@ public class RootLayoutController {
 		image = undoList.pop();
 		showImage(image);
 	}
+
+    public void handleSusan(){
+        Susan susan = new Susan(0.1);
+        Mat result = susan.apply(image);
+        showImage(result);
+    }
+
+    public void handleBorderSegmentation(){
+        
+
+    }
 	public void setMainApp(Main main) {
 		mainApp = main;
 	}

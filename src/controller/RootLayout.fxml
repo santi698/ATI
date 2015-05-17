@@ -1,126 +1,128 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.shape.*?>
-<?import javafx.scene.chart.*?>
-<?import javafx.scene.image.*?>
 <?import java.lang.*?>
 <?import java.util.*?>
+<?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.paint.*?>
+<?import javafx.scene.shape.*?>
 <?import javafx.scene.text.*?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.RootLayoutController">
-   <top>
-      <MenuBar BorderPane.alignment="CENTER">
-         <menus>
-            <Menu mnemonicParsing="false" text="Archivo">
-               <items>
-                  <MenuItem mnemonicParsing="false" onAction="#handleNew" text="Nuevo" />
-                  <MenuItem mnemonicParsing="false" onAction="#handleLoad" text="Abrir..." />
-                  <SeparatorMenuItem mnemonicParsing="false" />
-                  <MenuItem mnemonicParsing="false" onAction="#handleSave" text="Guardar" />
-                  <MenuItem mnemonicParsing="false" onAction="#handleSave" text="Guardar como..." />
-                  <SeparatorMenuItem mnemonicParsing="false" />
-                  <MenuItem mnemonicParsing="false" onAction="#handleQuit" text="Salir" />
-               </items>
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/2.2" fx:controller="controller.RootLayoutController">
+  <center>
+    <SplitPane dividerPositions="0.6270903010033445" prefHeight="400.0" prefWidth="640.0" BorderPane.alignment="CENTER">
+      <items>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+          <children>
+            <ImageView fx:id="imageView" onMouseClicked="#handleClick" onMouseDragged="#handleDrag" onMousePressed="#handlePress" pickOnBounds="true" preserveRatio="true" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0" />
+            <Rectangle fx:id="selectionRectangle" arcHeight="5.0" arcWidth="5.0" fill="TRANSPARENT" height="20.0" mouseTransparent="true" stroke="#000000cb" visible="false" width="20.0" />
+          </children>
+        </AnchorPane>
+        <AnchorPane maxWidth="200.0" minHeight="300.0" minWidth="220.0" prefHeight="160.0" prefWidth="200.0">
+          <children>
+            <AreaChart fx:id="histChart" alternativeRowFillVisible="false" animated="false" horizontalGridLinesVisible="false" horizontalZeroLineVisible="false" maxHeight="150.0" maxWidth="200.0" minHeight="150.0" minWidth="200.0" opacity="0.75" prefHeight="150.0" prefWidth="200.0" verticalGridLinesVisible="false" verticalZeroLineVisible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
+              <xAxis>
+                <NumberAxis animated="false" minorTickVisible="false" side="LEFT" tickLabelsVisible="false" tickMarkVisible="false" />
+              </xAxis>
+              <yAxis>
+                <NumberAxis animated="false" minorTickVisible="false" side="LEFT" tickLabelsVisible="false" tickMarkVisible="false" />
+              </yAxis>
+            </AreaChart>
+            <TextArea fx:id="infoLabel" editable="false" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="200.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="20.0" />
+          </children>
+        </AnchorPane>
+      </items>
+    </SplitPane>
+  </center>
+  <top>
+    <MenuBar BorderPane.alignment="CENTER">
+      <menus>
+        <Menu mnemonicParsing="false" text="Archivo">
+          <items>
+            <MenuItem mnemonicParsing="false" onAction="#handleNew" text="Nuevo" />
+            <MenuItem mnemonicParsing="false" onAction="#handleLoad" text="Abrir..." />
+            <SeparatorMenuItem mnemonicParsing="false" />
+            <MenuItem mnemonicParsing="false" onAction="#handleSave" text="Guardar" />
+            <MenuItem mnemonicParsing="false" onAction="#handleSave" text="Guardar como..." />
+            <SeparatorMenuItem mnemonicParsing="false" />
+            <MenuItem mnemonicParsing="false" onAction="#handleQuit" text="Salir" />
+          </items>
+        </Menu>
+        <Menu disable="true" mnemonicParsing="false" text="Editar" fx:id="editMenu">
+          <items>
+            <MenuItem mnemonicParsing="false" onAction="#handleUndo" text="Deshacer" />
+            <MenuItem mnemonicParsing="false" onAction="#handleCrop" text="Recortar a la seleccion" />
+            <MenuItem mnemonicParsing="false" onAction="#handleBinaryOperation" text="Operacion Binaria..." />
+          </items>
+        </Menu>
+        <Menu disable="true" mnemonicParsing="false" text="Filtros" fx:id="filterMenu">
+          <items>
+            <MenuItem mnemonicParsing="false" onAction="#handleMonochrome" text="Monocromo" />
+            <MenuItem mnemonicParsing="false" onAction="#handleNegative" text="Negativo" />
+            <MenuItem mnemonicParsing="false" onAction="#handleEnhanceContrast" text="Aumentar contraste" />
+            <Menu mnemonicParsing="false" text="Umbralizar">
+              <items>
+                <MenuItem mnemonicParsing="false" onAction="#handleUmbralizeManual" text="Manual" />
+                <MenuItem mnemonicParsing="false" onAction="#handleUmbralizeGlobal" text="Global" />
+                <MenuItem mnemonicParsing="false" onAction="#handleUmbralizeOtsu" text="Otsu" />
+              </items>
             </Menu>
-            <Menu fx:id="editMenu" disable="true" mnemonicParsing="false" text="Editar">
-               <items>
-                  <MenuItem mnemonicParsing="false" onAction="#handleUndo" text="Deshacer" />
-                  <MenuItem mnemonicParsing="false" onAction="#handleCrop" text="Recortar a la seleccion" />
-                  <MenuItem mnemonicParsing="false" onAction="#handleBinaryOperation" text="Operacion Binaria..." />
-               </items>
+            <MenuItem mnemonicParsing="false" onAction="#handleEqualize" text="Ecualizar" />
+            <MenuItem mnemonicParsing="false" onAction="#handleAnisotropicDiffusion" text="Difusion anisotropica" />
+            <Menu mnemonicParsing="false" text="Mascaras">
+              <items>
+                <MenuItem mnemonicParsing="false" onAction="#handleGaussianFilter" text="Gaussiana" />
+                <MenuItem mnemonicParsing="false" onAction="#handleMeanFilter" text="De medias" />
+                <MenuItem mnemonicParsing="false" onAction="#handleMedianFilter" text="De la mediana" />
+                <MenuItem mnemonicParsing="false" onAction="#handleHighpassFilter" text="Filtro de paso alto" />
+                <MenuItem mnemonicParsing="false" onAction="#handleKirsch4" text="Kirsch4" />
+                <MenuItem mnemonicParsing="false" onAction="#handleSobel" text="Sobel" />
+                <MenuItem mnemonicParsing="false" onAction="#handleSobel4" text="Sobel4" />
+                <MenuItem mnemonicParsing="false" onAction="#handlePrewitt" text="Prewitt" />
+                <MenuItem mnemonicParsing="false" onAction="#handlePrewitt4" text="Prewitt4" />
+                <MenuItem mnemonicParsing="false" onAction="#handleLaplacian" text="Laplaciano" />
+                <MenuItem mnemonicParsing="false" onAction="#handleLaplacianOfGaussian" text="Laplaciano de la gaussiana" />
+                <MenuItem mnemonicParsing="false" onAction="#handleSusan" text="Susan" />
+                <MenuItem mnemonicParsing="false" onAction="#handleBorderSegmentation" text="Segmentar Bordes" />
+              </items>
             </Menu>
-            <Menu fx:id="filterMenu" disable="true" mnemonicParsing="false" text="Filtros">
-               <items>
-                  <MenuItem mnemonicParsing="false" onAction="#handleMonochrome" text="Monocromo" />
-                  <MenuItem mnemonicParsing="false" onAction="#handleNegative" text="Negativo" />
-                  <MenuItem mnemonicParsing="false" onAction="#handleEnhanceContrast" text="Aumentar contraste" />
-                  <Menu mnemonicParsing="false" text="Umbralizar">
-                    <items>
-                        <MenuItem mnemonicParsing="false" onAction="#handleUmbralizeManual" text="Manual" />
-                      <MenuItem mnemonicParsing="false" onAction="#handleUmbralizeGlobal" text="Global" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleUmbralizeOtsu" text="Otsu" />
-                    </items>
-                  </Menu>
-                  <MenuItem mnemonicParsing="false" onAction="#handleEqualize" text="Ecualizar" />
-                  <MenuItem mnemonicParsing="false" onAction="#handleAnisotropicDiffusion" text="Difusion anisotropica" />
-                  <Menu mnemonicParsing="false" text="Mascaras">
-                     <items>
-                        <MenuItem mnemonicParsing="false" onAction="#handleGaussianFilter" text="Gaussiana" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleMeanFilter" text="De medias" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleMedianFilter" text="De la mediana" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleHighpassFilter" text="Filtro de paso alto" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleKirsch4" text="Kirsch4" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleSobel" text="Sobel" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleSobel4" text="Sobel4" />
-                        <MenuItem mnemonicParsing="false" onAction="#handlePrewitt" text="Prewitt" />
-                        <MenuItem mnemonicParsing="false" onAction="#handlePrewitt4" text="Prewitt4" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleLaplacian" text="Laplaciano" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleLaplacianOfGaussian" text="Laplaciano de la gaussiana" />
-                     </items>
-                  </Menu>
-                  <Menu mnemonicParsing="false" text="Agregar ruido">
-                     <items>
-                        <MenuItem mnemonicParsing="false" onAction="#handleGaussianNoise" text="Gaussiano" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleRayleighNoise" text="Rayleigh" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleExponentialNoise" text="Exponencial" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleSaltAndPepperNoise" text="Sal y Pimienta" />
-                     </items>
-                  </Menu>
-               </items>
+            <Menu mnemonicParsing="false" text="Agregar ruido">
+              <items>
+                <MenuItem mnemonicParsing="false" onAction="#handleGaussianNoise" text="Gaussiano" />
+                <MenuItem mnemonicParsing="false" onAction="#handleRayleighNoise" text="Rayleigh" />
+                <MenuItem mnemonicParsing="false" onAction="#handleExponentialNoise" text="Exponencial" />
+                <MenuItem mnemonicParsing="false" onAction="#handleSaltAndPepperNoise" text="Sal y Pimienta" />
+              </items>
             </Menu>
-            <Menu mnemonicParsing="false" text="Generar">
-               <items>
-                  <Menu mnemonicParsing="false" text="Ruido">
-                     <items>
-                        <MenuItem mnemonicParsing="false" onAction="#handleGenGaussianNoise" text="Gaussiano" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleGenRayleighNoise" text="Rayleigh" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleGenExponentialNoise" text="Exponencial" />
-                     </items>
-                  </Menu>
-                  <Menu mnemonicParsing="false" text="Imagen">
-                     <items>
-                        <MenuItem mnemonicParsing="false" onAction="#genCenteredSquare" text="Cuadrado centrado" />
-                        <MenuItem mnemonicParsing="false" onAction="#genCenteredCircle" text="Circulo centrado" />
-                        <MenuItem mnemonicParsing="false" onAction="#genGrayscale" text="Degradado de grises" />
-                        <MenuItem mnemonicParsing="false" onAction="#genColorscale" text="Degradado de colores" />
-                     </items>
-                  </Menu>
-               </items>
+          </items>
+        </Menu>
+        <Menu mnemonicParsing="false" text="Generar">
+          <items>
+            <Menu mnemonicParsing="false" text="Ruido">
+              <items>
+                <MenuItem mnemonicParsing="false" onAction="#handleGenGaussianNoise" text="Gaussiano" />
+                <MenuItem mnemonicParsing="false" onAction="#handleGenRayleighNoise" text="Rayleigh" />
+                <MenuItem mnemonicParsing="false" onAction="#handleGenExponentialNoise" text="Exponencial" />
+              </items>
             </Menu>
-            <Menu mnemonicParsing="false" text="Ayuda">
-               <items>
-                  <MenuItem mnemonicParsing="false" text="Acerca de..." />
-               </items>
+            <Menu mnemonicParsing="false" text="Imagen">
+              <items>
+                <MenuItem mnemonicParsing="false" onAction="#genCenteredSquare" text="Cuadrado centrado" />
+                <MenuItem mnemonicParsing="false" onAction="#genCenteredCircle" text="Circulo centrado" />
+                <MenuItem mnemonicParsing="false" onAction="#genGrayscale" text="Degradado de grises" />
+                <MenuItem mnemonicParsing="false" onAction="#genColorscale" text="Degradado de colores" />
+              </items>
             </Menu>
-         </menus>
-      </MenuBar>
-   </top>
-   <center>
-      <SplitPane dividerPositions="0.7037617554858934" prefHeight="400.0" prefWidth="640.0" BorderPane.alignment="CENTER">
-         <items>
-            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
-               <children>
-                  <ImageView fx:id="imageView" onMouseClicked="#handleClick" onMouseDragged="#handleDrag" onMousePressed="#handlePress" pickOnBounds="true" preserveRatio="true" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0" />
-                  <Rectangle id="selectionRectangle" fx:id="selectionRectangle" arcHeight="5.0" arcWidth="5.0" fill="TRANSPARENT" height="20.0" mouseTransparent="true" stroke="#000000cb" visible="false" width="20.0" />
-               </children>
-            </AnchorPane>
-            <AnchorPane maxWidth="200.0" minHeight="300.0" minWidth="220.0" prefHeight="160.0" prefWidth="200.0">
-               <children>
-                  <AreaChart fx:id="histChart" alternativeRowFillVisible="false" animated="false" horizontalGridLinesVisible="false" horizontalZeroLineVisible="false" maxHeight="150.0" maxWidth="200.0" minHeight="150.0" minWidth="200.0" opacity="0.75" prefHeight="150.0" prefWidth="200.0" stylesheets="@chart.css" verticalGridLinesVisible="false" verticalZeroLineVisible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
-                     <xAxis>
-                        <NumberAxis animated="false" minorTickVisible="false" side="LEFT" tickLabelsVisible="false" tickMarkVisible="false" />
-                     </xAxis>
-                     <yAxis>
-                        <NumberAxis animated="false" minorTickVisible="false" side="LEFT" tickLabelsVisible="false" tickMarkVisible="false" />
-                     </yAxis>
-                  </AreaChart>
-                  <TextArea fx:id="infoLabel" editable="false" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="200.0" prefWidth="200.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="20.0" />
-               </children>
-            </AnchorPane>
-         </items>
-      </SplitPane>
-   </center>
+          </items>
+        </Menu>
+        <Menu mnemonicParsing="false" text="Ayuda">
+          <items>
+            <MenuItem mnemonicParsing="false" text="Acerca de..." />
+          </items>
+        </Menu>
+      </menus>
+    </MenuBar>
+  </top>
 </BorderPane>

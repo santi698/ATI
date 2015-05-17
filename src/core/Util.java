@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import core.masks.*;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
@@ -31,15 +32,6 @@ import core.filters.NoiseFilter.NoiseType;
 import core.filters.RayleighNoiseGenerator;
 import core.filters.SaltAndPepperNoiseFilter;
 import core.filters.Umbral;
-import core.masks.Gaussian;
-import core.masks.Highpass;
-import core.masks.Kirsh;
-import core.masks.Laplacian;
-import core.masks.LaplacianOfGaussian;
-import core.masks.Means;
-import core.masks.Prewitt;
-import core.masks.Sobel;
-import core.masks.UnnamedMask;
 import core.operations.BinaryAddition;
 import core.operations.BinaryDifference;
 import core.operations.BinaryMultiplication;

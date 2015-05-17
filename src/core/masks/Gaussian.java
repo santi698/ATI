@@ -1,13 +1,12 @@
 package core.masks;
 
-
-
 public class Gaussian extends Mask {
 	private int size;
 	private double sigma;
 	private double sum;
 	private int center;
 	private double[][] matrix;
+
 	public Gaussian(int size, double sigma) {
 		this.size = size;
 		this.sigma = sigma;

@@ -28,7 +28,7 @@ public abstract class Mask {
 		}
 		return result;
 	}
-	private Runnable applyMask(Mat image, int i, int j, Mat result) {
+	protected Runnable applyMask(Mat image, int i, int j, Mat result) {
 		return () -> {
 			double[] resultColor = new double[image.channels()];
 			for (int x = -getSize()/2; x < getSize()/2+1; x++) {

@@ -505,7 +505,7 @@ public class RootLayoutController {
 
     public void handleBorderSegmentation(){
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        BorderSegmentation segmentation = new BorderSegmentation(5, 10,
+        BorderSegmentation segmentation = new BorderSegmentation(15, 10,
                 (Set<Point> oBorder) -> setOverlayFromSet(oBorder),new Point(selectionX1,selectionY1),
                 new Point(selectionX2,selectionY2));
         Intermediator interm = new Intermediator(segmentation, ()->setNextImage(), image);
@@ -515,7 +515,7 @@ public class RootLayoutController {
     private void setOverlayFromSet(Set<Point> points){
         Mat result = Mat.zeros(image.rows(),image.cols(),CvType.CV_8UC4);
         for(Point p: points){
-            double[] vec = {255,255,255,1};
+            double[] vec = {255,255,0,255};
             result.put(p.y,p.x,vec);
         }
         selectionRectangle.setVisible(false);
@@ -534,21 +534,26 @@ public class RootLayoutController {
 		return;
 	}
 	public void showImage(Mat img) {
-		selectionRectangle.setVisible(false);
-		filterMenu.setDisable(false);
-		editMenu.setDisable(false);
-		histogram = histogram(img);
-		Image fxImage = matToImage(img);
-		imageView.setImage(fxImage);
-		undoList.push(image);
-		image = img;
-		//updateHistogram();
-		if (undoList.size() > 20) 
-			undoList.removeFirst();
+		Platform.runLater(()-> {
+			overlayImage.setImage(matToImage(Mat.zeros(1, 1, CvType.CV_8UC4)));
+			selectionRectangle.setVisible(false);
+			filterMenu.setDisable(false);
+			editMenu.setDisable(false);
+			histogram = histogram(img);
+			Image fxImage = matToImage(img);
+			imageView.setImage(fxImage);
+			undoList.push(image);
+			image = img;
+			updateHistogram();
+			if (undoList.size() > 20) 
+				undoList.removeFirst();
+		});
 	}
 	public void setOverlay(Mat img) {
-		overlayImage.setImage(matToImage(img));
-		overlayImage.resize(img.width(), img.height());
+		Platform.runLater(()-> {
+			overlayImage.setImage(matToImage(img));
+			overlayImage.resize(img.width(), img.height());
+		});
 	}
 	public void showImageNewWindow(Mat img, String title) {
 		//TODO

@@ -1,11 +1,16 @@
 package core.border;
 
-import controller.RootLayoutController;
-import controller.ViewFunctions;
-import core.helper.Point;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import org.opencv.core.Mat;
 
-import java.util.*;
+import core.helper.Point;
 
 public class BorderSegmentation{
 
@@ -14,15 +19,15 @@ public class BorderSegmentation{
     private Mat original;
     private BorderMat calcMat;
     private final int iterations;
-    private final ViewFunctions viewFunctions;
+    private final Consumer<Set<Point>> overlaySetter;
     private final double sigma;
     private final Point start;
     private final Point end;
 
-    public BorderSegmentation(int iterations, double sigma, ViewFunctions func, final Point start,
+    public BorderSegmentation(int iterations, double sigma, Consumer<Set<Point>> func, final Point start,
                               final Point end){
         this.iterations = iterations;
-        this.viewFunctions = func;
+        this.overlaySetter = func;
         this.sigma = sigma;
         this.start = start;
         this.end = end;
@@ -66,7 +71,7 @@ public class BorderSegmentation{
         }
     }
 
-    private boolean cycle(BorderMat calcMat, Function func,int iterations, boolean endable){
+    private boolean cycle(BorderMat calcMat, Function<Point, Double> func,int iterations, boolean endable){
         boolean end1 = false , end2 = false;
         for (int i = 0; i < iterations || (!end1 && !end2 && endable); i++) {
             end1 = true;
@@ -97,7 +102,7 @@ public class BorderSegmentation{
                 }
             }
             checkAndRemove(Lout, Lin, 3);
-            viewFunctions.applyOverlay(Lout);
+            overlaySetter.accept(Lout);
         }
         return end1 && end2;
     }
@@ -136,10 +141,4 @@ public class BorderSegmentation{
         }
         return list;
     }
-
-    private interface Function{
-        public double apply(Point x);
-    }
-
-
 }

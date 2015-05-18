@@ -48,6 +48,13 @@
             <MenuItem mnemonicParsing="false" onAction="#handleSave" text="Guardar" />
             <MenuItem mnemonicParsing="false" onAction="#handleSave" text="Guardar como..." />
             <SeparatorMenuItem mnemonicParsing="false" />
+            <Menu mnemonicParsing="false" text="Segmentador Video">
+              <items>
+                <MenuItem mnemonicParsing="false" onAction="#handleBorderFolderLoad" text="Carpeta" />
+                <MenuItem mnemonicParsing="false" onAction="#handleBorderVideoLoad" text="Video" />
+              </items>
+            </Menu>
+            <SeparatorMenuItem mnemonicParsing="false" />
             <MenuItem mnemonicParsing="false" onAction="#handleQuit" text="Salir" />
           </items>
         </Menu>
@@ -117,9 +124,9 @@
               </items>
             </Menu>
             <Menu mnemonicParsing="false" text="Ayuda">
-                <items>
-                    <MenuItem mnemonicParsing="false" text="Acerca de..." />
-                </items>
+              <items>
+                <MenuItem mnemonicParsing="false" text="Acerca de..." />
+              </items>
             </Menu>
           </items>
         </Menu>

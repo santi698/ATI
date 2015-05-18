@@ -7,7 +7,7 @@ import org.opencv.core.Mat;
 
 import java.util.*;
 
-public class BorderSegmentation {
+public class BorderSegmentation{
 
     private final Set<Point> Lout = new HashSet<>();
     private final Set<Point> Lin = new HashSet<>();
@@ -15,42 +15,55 @@ public class BorderSegmentation {
     private BorderMat calcMat;
     private final int iterations;
     private final ViewFunctions viewFunctions;
+    private final double sigma;
+    private final Point start;
+    private final Point end;
 
-    public BorderSegmentation(int iterations, ViewFunctions func){
+    public BorderSegmentation(int iterations, double sigma, ViewFunctions func, final Point start,
+                              final Point end){
         this.iterations = iterations;
         this.viewFunctions = func;
+        this.sigma = sigma;
+        this.start = start;
+        this.end = end;
     }
 
-    public Set<Point> segmenter(final Mat image, final Point start, final Point end, final double sigma){
+    public void segment(Mat image){
         this.original = image;
-        int maxExecutions = 10;
-        this.calcMat = new BorderMat(image, start, end, sigma);
-        for(int x = 0; x<image.width(); x++){
-            for(int y = 0; y<image.height(); y++){
-                final Point loc = new Point(x,y);
-                if(x < start.x || x > end.x || y < start.y || y > end.y){
-                    calcMat.set(loc, 3);
-                }else if(((x == start.x || x==end.x) && (y>= start.y || y<= end.y)) ||
-                        ((y == start.y || y==end.y) && (x>=start.x || x<= end.x ))){
-                    calcMat.set(loc,1);
-                    Lout.add(loc);
-                }else if(((x == start.x + 1 ||x == end.x - 1 ) && (y>start.x || y<end.y)) ||
-                        ((y == start.y+1 || y== end.y-1) && (x > start.x || x< end.x))){
-                    calcMat.set(loc,-1);
-                    Lin.add(loc);
-                }else if(x > start.x+1 && x < end.x-1 && y > start.y+1 && y< end.y -1){
-                    calcMat.set(loc,-3);
-                }else{
-                    System.out.println("Should not occur");
+        if(Lin.isEmpty() && Lout.isEmpty()) {
+            this.calcMat = new BorderMat(original, sigma);
+            for (int x = 0; x < original.width(); x++) {
+                for (int y = 0; y < original.height(); y++) {
+                    final Point loc = new Point(x, y);
+                    if (x < start.x || x > end.x || y < start.y || y > end.y) {
+                        calcMat.set(loc, 3);
+                    } else if (((x == start.x || x == end.x) && (y >= start.y || y <= end.y)) ||
+                            ((y == start.y || y == end.y) && (x >= start.x || x <= end.x))) {
+                        calcMat.set(loc, 1);
+                        Lout.add(loc);
+                    } else if (((x == start.x + 1 || x == end.x - 1) && (y > start.x || y < end.y)) ||
+                            ((y == start.y + 1 || y == end.y - 1) && (x > start.x || x < end.x))) {
+                        calcMat.set(loc, -1);
+                        Lin.add(loc);
+                    } else if (x > start.x + 1 && x < end.x - 1 && y > start.y + 1 && y < end.y - 1) {
+                        calcMat.set(loc, -3);
+                    } else {
+                        System.out.println("Should not occur");
+                    }
                 }
             }
+        }else{
+            calcMat.recalculateRgbValues(image);
         }
+        operate();
+    }
+
+    private void operate(){
         boolean finish = false;
         for(int w = 0; w < iterations && !finish; w++) {
-            finish = cycle(calcMat, calcMat::calculateVelocity, 5, true);
-            cycle(calcMat, (p) -> (-calcMat.getGaussian(p)), 5, false);
+            finish = cycle(calcMat, calcMat::calculateVelocity, 10, true);
+            cycle(calcMat, (p) -> (-calcMat.getGaussian(p)), 10, false);
         }
-        return Lout;
     }
 
     private boolean cycle(BorderMat calcMat, Function func,int iterations, boolean endable){
@@ -123,7 +136,6 @@ public class BorderSegmentation {
         }
         return list;
     }
-
 
     private interface Function{
         public double apply(Point x);

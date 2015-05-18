@@ -4,12 +4,11 @@ import static core.Util.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
+import java.util.concurrent.*;
 
 import core.border.BorderSegmentation;
+import core.border.Intermediator;
 import core.helper.Point;
 import core.masks.Susan;
 import javafx.application.Platform;
@@ -37,12 +36,12 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.util.Pair;
 
 import javax.imageio.ImageIO;
-import javax.swing.border.Border;
 
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -50,6 +49,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 
 import application.Main;
 import core.Util;
+import org.opencv.videoio.VideoCapture;
 
 public class RootLayoutController {
 	@FXML
@@ -72,7 +72,9 @@ public class RootLayoutController {
 	private Rectangle selectionRectangle;
 	private int selectionX1, selectionY1, selectionX2, selectionY2, startX, startY;
 	
-	LinkedList<Mat> undoList = new LinkedList<Mat>(); 
+	LinkedList<Mat> undoList = new LinkedList<Mat>();
+
+    private LinkedList<File> fileList = null;
 
 	public void genCenteredCircle() {
 		int radius = getParameter("Radio").intValue();
@@ -366,6 +368,58 @@ public class RootLayoutController {
 			e1.printStackTrace();
 		}	
 	}
+
+    public void handleBorderFolderLoad(){
+        DirectoryChooser chooser = new DirectoryChooser();
+        File file = chooser.showDialog(mainApp.getPrimaryStage());
+        if (file == null)
+            return;
+        if(file.isDirectory()){
+            fileList = new LinkedList<>(Arrays.asList(file.listFiles()));
+            setNextImage();
+        }else{
+            Alert alert = new Alert(AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setContentText("Formato no soportado.");
+            alert.showAndWait();
+            return;
+        }
+
+    }
+
+    private Mat setNextImage(){
+        if(fileList != null && !fileList.isEmpty()){
+            Mat mat = Imgcodecs.imread(fileList.poll().getAbsolutePath());
+            if(mat != null && !mat.empty()){
+                showImage(mat);
+                return mat;
+            }else{
+                return setNextImage();
+            }
+        }
+        return null;
+    }
+
+    public void handleBorderVideoLoad(){
+        FileChooser chooser = new FileChooser();
+        File file = chooser.showOpenDialog(mainApp.getPrimaryStage());
+        if (file == null)
+            return;
+        String fileName = file.getName();
+        String extension = "";
+        int i = fileName.lastIndexOf('.');
+        if (i >= 0)
+            extension = fileName.substring(i + 1);
+
+        VideoCapture video = new VideoCapture();
+        video.open(file.getAbsolutePath());
+        Mat mat = new Mat();
+        if (video.isOpened()) {
+            video.read(mat);
+            showImage(mat);
+        }
+    }
+
 	public void handleMeanFilter() {
 		int size = getParameter("Tamaño").intValue();
 		showImage(meanFilter(image, size));
@@ -450,9 +504,12 @@ public class RootLayoutController {
     }
 
     public void handleBorderSegmentation(){
-        BorderSegmentation segmentation = new BorderSegmentation(50, (Set<Point> oBorder) -> setOverlayFromSet(oBorder));
-        segmentation.segmenter(image,new Point(selectionX1,selectionY1),
-                new Point(selectionX2,selectionY2), 10);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        BorderSegmentation segmentation = new BorderSegmentation(5, 10,
+                (Set<Point> oBorder) -> setOverlayFromSet(oBorder),new Point(selectionX1,selectionY1),
+                new Point(selectionX2,selectionY2));
+        Intermediator interm = new Intermediator(segmentation, ()->setNextImage(), image);
+        executor.submit(interm);
     }
 
     private void setOverlayFromSet(Set<Point> points){
@@ -463,10 +520,8 @@ public class RootLayoutController {
         }
         selectionRectangle.setVisible(false);
         setOverlay(result);
+
     }
-
-
-
 
 	public void setMainApp(Main main) {
 		mainApp = main;
@@ -487,7 +542,7 @@ public class RootLayoutController {
 		imageView.setImage(fxImage);
 		undoList.push(image);
 		image = img;
-		updateHistogram();
+		//updateHistogram();
 		if (undoList.size() > 20) 
 			undoList.removeFirst();
 	}

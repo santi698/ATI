@@ -9,18 +9,14 @@ public class BorderMat {
     private final double[][] mat;
     private final double[] innerRgb;
     private final double[] outerRgb;
-    private final Point start;
-    private final Point end;
-    private final Mat original;
+    private Mat original;
     private double innerLength = 0;
     private double outerLength = 0;
     private Gaussian gaussian;
 
-    public BorderMat(final Mat mat, Point start, Point end, double sigma){
+    public BorderMat(final Mat mat, double sigma){
         this.mat = new double[mat.width()][mat.height()];
         this.original = mat;
-        this.start = start;
-        this.end = end;
         innerRgb = new double[mat.channels()];
         outerRgb = new double[mat.channels()];
         for(int i = 0; i<mat.channels(); i++){
@@ -122,6 +118,45 @@ public class BorderMat {
                 }
             }
         }
+    }
+
+    private void reset(){
+        for(int h = 0; h<original.channels(); h++){
+            innerRgb[h] = 0;
+            outerRgb[h] = 0;
+        }
+        outerLength = 0;
+        innerLength = 0;
+    }
+
+    public void recalculateRgbValues(Mat original){
+        this.original = original;
+        reset();
+        for(int i = 0; i< mat.length; i++){
+            for(int w = 0; w < mat[i].length; w++){
+                if(mat[i][w] == 3){
+                    for(int h = 0; h<original.channels(); h++){
+                        outerRgb[h] += original.get(w,i)[h];
+
+                    }
+                    outerLength++;
+                }else if(mat[i][w] == -3){
+                    for(int h = 0; h<original.channels(); h++){
+                        innerRgb[h] += original.get(w,i)[h];
+                    }
+                    innerLength++;
+                }
+            }
+        }
+    }
+
+    public void printAverageByBand(){
+        System.out.println("R: " + outerRgb[0]/outerLength + " " + innerRgb[0]/innerLength);
+        System.out.println("G: " + outerRgb[1]/outerLength + " " + innerRgb[1]/innerLength);
+        System.out.println("B: " + outerRgb[2]/outerLength + " " + innerRgb[2]/innerLength);
+        System.out.println("Inner: "+innerLength);
+        System.out.println("Outter: " + outerLength);
+        System.out.println("");
     }
 
 

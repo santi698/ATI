@@ -1,5 +1,7 @@
 package core.border;
 
+import controller.RootLayoutController;
+import controller.ViewFunctions;
 import core.helper.Point;
 import org.opencv.core.Mat;
 
@@ -12,17 +14,19 @@ public class BorderSegmentation {
     private Mat original;
     private BorderMat calcMat;
     private final int iterations;
+    private final ViewFunctions viewFunctions;
 
-    public BorderSegmentation(int iterations){
+    public BorderSegmentation(int iterations, ViewFunctions func){
         this.iterations = iterations;
+        this.viewFunctions = func;
     }
 
     public Set<Point> segmenter(final Mat image, final Point start, final Point end, final double sigma){
         this.original = image;
         int maxExecutions = 10;
         this.calcMat = new BorderMat(image, start, end, sigma);
-        for(int x = 0; x<image.rows(); x++){
-            for(int y = 0; y<image.cols(); y++){
+        for(int x = 0; x<image.width(); x++){
+            for(int y = 0; y<image.height(); y++){
                 final Point loc = new Point(x,y);
                 if(x < start.x || x > end.x || y < start.y || y > end.y){
                     calcMat.set(loc, 3);
@@ -41,36 +45,55 @@ public class BorderSegmentation {
                 }
             }
         }
-        for(int w = 0; w < 100; w++) {
-            cycle(calcMat, calcMat::calculateVelocity);
-            cycle(calcMat, (p) -> -calcMat.getGaussian(p));
+        boolean finish = false;
+        for(int w = 0; w < iterations && !finish; w++) {
+            finish = cycle(calcMat, calcMat::calculateVelocity, 5, true);
+            cycle(calcMat, (p) -> (-calcMat.getGaussian(p)), 5, false);
         }
         return Lout;
     }
 
-    private void cycle(BorderMat calcMat, Function func){
-        for (int i = 0; i < iterations; i++) {
-            for (Point p : Lout) {
+    private boolean cycle(BorderMat calcMat, Function func,int iterations, boolean endable){
+        boolean end1 = false , end2 = false;
+        for (int i = 0; i < iterations || (!end1 && !end2 && endable); i++) {
+            end1 = true;
+            for(Point p: new HashSet<>(Lout)) {
                 if (func.apply(p) > 0) {
-                    expand(p, calcMat);
+                    end1 = false;
+                    Lout.remove(p);
+                    Lin.add(p);
+                    calcMat.set(p, -1);
+                    calculateNeighbours(p).stream().filter(j -> calcMat.get(j) == 3).forEach(j -> {
+                        Lout.add(j);
+                        calcMat.set(j, 1);
+                    });
                 }
             }
             checkAndRemove(Lin, Lout, -3);
-            for (Point p : Lin) {
+            end2 = true;
+            for(Point p: new HashSet<>(Lin)){
                 if (func.apply(p) < 0) {
-                    contract(p, calcMat);
+                    end2 = false;
+                    Lin.remove(p);
+                    Lout.add(p);
+                    calcMat.set(p,1);
+                    calculateNeighbours(p).stream().filter(j -> calcMat.get(j) == -3).forEach(j -> {
+                        Lin.add(j);
+                        calcMat.set(j, -1);
+                    });
                 }
             }
             checkAndRemove(Lout, Lin, 3);
+            viewFunctions.applyOverlay(Lout);
         }
+        return end1 && end2;
     }
 
     private void checkAndRemove(Set<Point> origin, Set<Point> result, int value){
-        for(Iterator<Point> iterator = origin.iterator(); iterator.hasNext();){
-            Point p = iterator.next();
-            if(!containsAny(result,calculateNeighbours(iterator.next()))){
+        for(Point p: new HashSet<>(origin)){
+            if(!containsAny(result,calculateNeighbours(p))){
                 calcMat.set(p,value);
-                iterator.remove();
+                origin.remove(p);
             }
         }
     }
@@ -84,38 +107,18 @@ public class BorderSegmentation {
         return false;
     }
 
-    private void expand(Point p, BorderMat mat){
-        Lout.remove(p);
-        Lin.add(p);
-        mat.set(p, -1);
-        calculateNeighbours(p).stream().filter(i -> mat.get(i) == 3).forEach(i -> {
-            Lout.add(i);
-            mat.set(i, 1);
-        });
-    }
-
-    private void contract(Point p, BorderMat mat){
-        Lin.remove(p);
-        Lout.add(p);
-        mat.set(p,1);
-        calculateNeighbours(p).stream().filter(i -> mat.get(i) == -3).forEach(i -> {
-            Lin.add(i);
-            mat.set(i,-1);
-        });
-    }
-
     private List<Point> calculateNeighbours(Point p){
         List<Point> list = new LinkedList<>();
         if(p.x > 0){
             list.add(new Point(p.x-1, p.y));
         }
-        if(p.x+1 < original.rows()){
+        if(p.x+1 < original.width()){
             list.add(new Point(p.x+1,p.y));
         }
         if(p.y > 0){
             list.add(new Point(p.x, p.y-1));
         }
-        if(p.y+1<original.cols()){
+        if(p.y+1<original.height()){
             list.add(new Point(p.x, p.y+1));
         }
         return list;

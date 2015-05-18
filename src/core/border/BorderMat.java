@@ -17,7 +17,7 @@ public class BorderMat {
     private Gaussian gaussian;
 
     public BorderMat(final Mat mat, Point start, Point end, double sigma){
-        this.mat = new double[mat.rows()][mat.cols()];
+        this.mat = new double[mat.width()][mat.height()];
         this.original = mat;
         this.start = start;
         this.end = end;
@@ -26,6 +26,11 @@ public class BorderMat {
         for(int i = 0; i<mat.channels(); i++){
             innerRgb[i] = 0;
             outerRgb[i] = 0;
+        }
+        for(int i = 0 ; i< original.width(); i++){
+            for(int w = 0; w< original.height(); w++){
+                this.mat[i][w] = 0;
+            }
         }
 
         gaussian = new Gaussian(3,sigma);
@@ -47,40 +52,40 @@ public class BorderMat {
 
     private void addToInner(final Point p){
         for(int i = 0; i<original.channels(); i++){
-            innerRgb[i] += original.get(p.x,p.y)[i];
+            innerRgb[i] += original.get(p.y,p.x)[i];
         }
         innerLength++;
     }
 
     private void addToOuter(final Point p){
         for(int i = 0; i<original.channels(); i++){
-            outerRgb[i] += original.get(p.x,p.y)[i];
+            outerRgb[i] += original.get(p.y,p.x)[i];
         }
         outerLength++;
     }
 
     private void removeFromInner(final Point p){
         for(int i = 0; i<original.channels(); i++){
-            innerRgb[i] -= original.get(p.x,p.y)[i];
+            innerRgb[i] -= original.get(p.y,p.x)[i];
         }
         innerLength--;
     }
 
     private void removeFromOutter(final Point p){
         for(int i = 0; i<original.channels(); i++){
-            outerRgb[i] -= original.get(p.x,p.y)[i];
+            outerRgb[i] -= original.get(p.y,p.x)[i];
         }
         outerLength--;
     }
 
     public double calculateVelocity(final Point p){
-        final double[] rgb = original.get(p.x,p.y);
+        final double[] rgb = original.get(p.y,p.x);
         double p1sum = 0, p2sum = 0;
         for(int i = 0; i< original.channels(); i++){
             p1sum += Math.pow((innerRgb[i]/innerLength - rgb[i]),2);
             p2sum += Math.pow((outerRgb[i]/outerLength - rgb[i]),2);
         }
-        return Math.sqrt(p1sum) - Math.sqrt(p2sum);
+        return Math.sqrt(p2sum) - Math.sqrt(p1sum);
     }
 
     public double get(final Point p){
@@ -89,10 +94,10 @@ public class BorderMat {
 
     public double getGaussian(Point p){
         double sum = 0;
-        for(int i = p.x - 1 ; i< p.x +1; i++){
-            for(int w= p.y - 1; w<p.y +1 ; w++){
+        for(int i = p.x - gaussian.getSize()/2; i <= p.x + gaussian.getSize()/2; i++){
+            for(int w= p.y - gaussian.getSize()/2; w <= p.y + gaussian.getSize()/2 ; w++){
                 if(insideBounds(i,w)){
-                    sum += (mat[i][w] * gaussian.get(i - p.x + 1, w - p.y + 1));
+                    sum += (mat[i][w] * gaussian.get(i - p.x,w - p.y));
                 }
             }
         }
@@ -104,6 +109,19 @@ public class BorderMat {
             return true;
         }
         return false;
+    }
+
+    public void printBorderMat(){
+        for(int i = 0; i< original.width(); i++){
+            System.out.println();
+            for(int w = 0; w< original.height(); w++){
+                if(mat[i][w] < 0){
+                    System.out.print((int)mat[i][w]);
+                }else {
+                    System.out.print(" " + (int) mat[i][w]);
+                }
+            }
+        }
     }
 
 

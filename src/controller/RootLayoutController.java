@@ -6,9 +6,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import core.border.BorderSegmentation;
+import core.helper.Point;
 import core.masks.Susan;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
@@ -40,6 +42,7 @@ import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.util.Pair;
 
 import javax.imageio.ImageIO;
+import javax.swing.border.Border;
 
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -74,7 +77,7 @@ public class RootLayoutController {
 	public void genCenteredCircle() {
 		int radius = getParameter("Radio").intValue();
 		if (radius > 0)
-			showImage(centeredCircle(256, 256, radius, new double[] {0,0,0}, new double[] {255,255,255}));
+			showImage(centeredCircle(256, 256, radius, new double[]{0, 0, 0}, new double[]{255, 255, 255}));
 	}
 	public void genCenteredSquare() {
 		int side = getParameter("Lado").intValue();
@@ -447,9 +450,24 @@ public class RootLayoutController {
     }
 
     public void handleBorderSegmentation(){
-        
-
+        BorderSegmentation segmentation = new BorderSegmentation(50, (Set<Point> oBorder) -> setOverlayFromSet(oBorder));
+        segmentation.segmenter(image,new Point(selectionX1,selectionY1),
+                new Point(selectionX2,selectionY2), 10);
     }
+
+    private void setOverlayFromSet(Set<Point> points){
+        Mat result = Mat.zeros(image.rows(),image.cols(),CvType.CV_8UC4);
+        for(Point p: points){
+            double[] vec = {255,255,255,1};
+            result.put(p.y,p.x,vec);
+        }
+        selectionRectangle.setVisible(false);
+        setOverlay(result);
+    }
+
+
+
+
 	public void setMainApp(Main main) {
 		mainApp = main;
 	}
@@ -555,4 +573,6 @@ public class RootLayoutController {
 				infoLabel.setText("R: " + c[0] + "\nG: " + c[0] + "\nB:" + c[0]);
 		}
 	}
+
+
 }

@@ -41,14 +41,10 @@ public class Susan extends Mask
             double[] resultColor = new double[image.channels()];
             for (int x = -getSize()/2; x < getSize()/2+1; x++) {
                 for (int y = -getSize()/2; y < getSize()/2+1; y++) {
-                    if(insideBound(x,y,image) && get(x + getSize()/2,y + getSize()/2) != 0) {
-                        double[] localColor = image.get(x + getSize()/2,y + getSize()/2);
+                    if(insideBound(x,y,image) && get(x + getSize()/2, y + getSize()/2) != 0) {
+                        double[] localColor = image.get(x + getSize()/2, y + getSize()/2);
                         for (int h = 0; h < image.channels(); h++) {
-                            try {
-                                nsum[h] += Math.exp(-Math.pow((localColor[h] - originalColor[h]) / 27, 6));
-                            }catch(Exception e){
-                                e.printStackTrace();
-                            }
+                            nsum[h] += Math.exp(-Math.pow((localColor[h] - originalColor[h]) / 27, 6));
                         }
                     }
                 }

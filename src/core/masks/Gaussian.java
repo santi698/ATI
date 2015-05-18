@@ -15,7 +15,7 @@ public class Gaussian extends Mask {
 		this.sum = 0;
 		fillMatrix();
 	}
-	public void fillMatrix() {
+	private void fillMatrix() {
 		for (int i = -center; i < center+1; i++) {
 			for(int j = -center; j < center+1; j++) {
 				double value = (1/(2*Math.PI*sigma*sigma))*Math.exp(-(i*i+j*j)/(2*sigma*sigma));

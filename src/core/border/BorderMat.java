@@ -30,7 +30,6 @@ public class BorderMat {
         }
 
         gaussian = new Gaussian(3,sigma);
-        gaussian.fillMatrix();
     }
 
     public void set(final Point p, final int value){

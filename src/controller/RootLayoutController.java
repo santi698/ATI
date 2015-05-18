@@ -4,6 +4,7 @@ import static core.Util.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -12,8 +13,13 @@ import core.border.Intermediator;
 import core.helper.Point;
 import core.masks.Susan;
 import javafx.application.Platform;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableObjectValue;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.chart.AreaChart;
@@ -49,9 +55,12 @@ import org.opencv.imgcodecs.Imgcodecs;
 
 import application.Main;
 import core.Util;
+
 import org.opencv.videoio.VideoCapture;
 
-public class RootLayoutController {
+import com.sun.org.apache.xalan.internal.xsltc.runtime.Parameter;
+
+public class RootLayoutController implements Initializable {
 	@FXML
 	private Menu editMenu;
 	@FXML
@@ -66,6 +75,8 @@ public class RootLayoutController {
 	private ImageView overlayImage;
 	@FXML
 	private TextArea infoLabel;
+	private ObjectProperty<Mat> imageProperty = new SimpleObjectProperty<Mat>();
+	private ObjectProperty<Mat> overlayImageProperty = new SimpleObjectProperty<Mat>();
 	
 	private Main mainApp;
 	@FXML
@@ -405,12 +416,6 @@ public class RootLayoutController {
         File file = chooser.showOpenDialog(mainApp.getPrimaryStage());
         if (file == null)
             return;
-        String fileName = file.getName();
-        String extension = "";
-        int i = fileName.lastIndexOf('.');
-        if (i >= 0)
-            extension = fileName.substring(i + 1);
-
         VideoCapture video = new VideoCapture();
         video.open(file.getAbsolutePath());
         Mat mat = new Mat();
@@ -504,8 +509,11 @@ public class RootLayoutController {
     }
 
     public void handleBorderSegmentation(){
+    	Pair<Number, Number> parameters = getTwoParameters("Cantidad de iteraciones", "Sigma");
+    	int iterations = parameters.getKey().intValue();
+    	double sigma = parameters.getValue().doubleValue();
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        BorderSegmentation segmentation = new BorderSegmentation(15, 10,
+        BorderSegmentation segmentation = new BorderSegmentation(iterations, sigma,
                 (Set<Point> oBorder) -> setOverlayFromSet(oBorder),new Point(selectionX1,selectionY1),
                 new Point(selectionX2,selectionY2));
         Intermediator interm = new Intermediator(segmentation, ()->setNextImage(), image);
@@ -518,9 +526,7 @@ public class RootLayoutController {
             double[] vec = {255,255,0,255};
             result.put(p.y,p.x,vec);
         }
-        selectionRectangle.setVisible(false);
-        setOverlay(result);
-
+        overlayImageProperty.set(result);
     }
 
 	public void setMainApp(Main main) {
@@ -632,6 +638,15 @@ public class RootLayoutController {
 			else		
 				infoLabel.setText("R: " + c[0] + "\nG: " + c[0] + "\nB:" + c[0]);
 		}
+	}
+	@Override
+	public void initialize(URL location, ResourceBundle resources) {
+		imageProperty.addListener((observable, before, after)-> {
+			showImage(after);
+		});
+		overlayImageProperty.addListener((obs, o, n)->{
+			setOverlay(n);
+		});
 	}
 
 

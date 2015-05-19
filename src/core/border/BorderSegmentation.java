@@ -1,5 +1,6 @@
 package core.border;
 
+import java.awt.Point;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -9,9 +10,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.opencv.core.Mat;
-
-import core.helper.Point;
-
 public class BorderSegmentation{
 
     private final Set<Point> Lout = new HashSet<>();
@@ -19,12 +17,12 @@ public class BorderSegmentation{
     private Mat original;
     private BorderMat calcMat;
     private final int iterations;
-    private final Consumer<Set<Point>> overlaySetter;
+    private final Consumer<Collection<Point>> overlaySetter;
     private final double sigma;
     private final Point start;
     private final Point end;
 
-    public BorderSegmentation(int iterations, double sigma, Consumer<Set<Point>> func, final Point start,
+    public BorderSegmentation(int iterations, double sigma, Consumer<Collection<Point>> func, final Point start,
                               final Point end){
         this.iterations = iterations;
         this.overlaySetter = func;

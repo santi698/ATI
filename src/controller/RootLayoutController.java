@@ -1,27 +1,66 @@
 package controller;
 
-import static core.Util.*;
+import static core.Util.addExpNoise;
+import static core.Util.addGaussianNoise;
+import static core.Util.addRayleighNoise;
+import static core.Util.addSaltAndPepper;
+import static core.Util.anisotropicDiffusion;
+import static core.Util.centeredCircle;
+import static core.Util.centeredSquare;
+import static core.Util.colorscale;
+import static core.Util.compressRangeDynamic;
+import static core.Util.compressRangeLinear;
+import static core.Util.contrast;
+import static core.Util.crop;
+import static core.Util.detectBordersKirsch4;
+import static core.Util.detectBordersLaplacian;
+import static core.Util.detectBordersLaplacianOfGaussian;
+import static core.Util.detectBordersPrewitt;
+import static core.Util.detectBordersPrewitt4D;
+import static core.Util.detectBordersSobel;
+import static core.Util.detectBordersSobel4D;
+import static core.Util.edgeDetectCanny;
+import static core.Util.gaussianFilter;
+import static core.Util.generateExponentialNoise;
+import static core.Util.generateGaussianNoise;
+import static core.Util.generateRayleighNoise;
+import static core.Util.grayscale;
+import static core.Util.highpassFilter;
+import static core.Util.histogram;
+import static core.Util.line;
+import static core.Util.matToImage;
+import static core.Util.meanFilter;
+import static core.Util.medianFilter;
+import static core.Util.monochrome;
+import static core.Util.openRaw;
+import static core.Util.umbralize;
+import static core.Util.umbralizeOtsu;
 
+import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import core.border.BorderSegmentation;
-import core.border.Intermediator;
-import core.helper.Point;
-import core.masks.Susan;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableObjectValue;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
+import javafx.geometry.Point2D;
 import javafx.scene.Node;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.chart.AreaChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
@@ -52,13 +91,14 @@ import javax.imageio.ImageIO;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.videoio.VideoCapture;
 
 import application.Main;
 import core.Util;
-
-import org.opencv.videoio.VideoCapture;
-
-import com.sun.org.apache.xalan.internal.xsltc.runtime.Parameter;
+import core.border.BorderSegmentation;
+import core.border.Intermediator;
+import core.hough.Hough;
+import core.masks.Susan;
 
 public class RootLayoutController implements Initializable {
 	@FXML
@@ -73,6 +113,8 @@ public class RootLayoutController implements Initializable {
 	private ImageView imageView;
 	@FXML
 	private ImageView overlayImage;
+	@FXML
+	private Canvas overlayCanvas;
 	@FXML
 	private TextArea infoLabel;
 	private ObjectProperty<Mat> imageProperty = new SimpleObjectProperty<Mat>();
@@ -273,6 +315,20 @@ public class RootLayoutController implements Initializable {
 		selectionRectangle.setWidth(selectionX2-selectionX1);
 		selectionRectangle.setHeight(selectionY2-selectionY1);
 		selectionRectangle.setVisible(true);
+	}
+	public void handleEdgeDetectCanny() {
+		double sigma = getParameter("Sigma (SD)").doubleValue();
+		showImage(edgeDetectCanny(image, sigma));
+	}
+	public void handleLineDetectHough() {
+		Hough hough = new Hough(line, -Math.PI, Math.PI, Math.PI/100, 0, 200, 10);
+		hough.computeResults(edgeDetectCanny(image, 10));
+		List<Point2D> lines = hough.getDetected((res, max)-> res.getVotes()>0.3*max);
+//		List<Point> points = hough.getPassingPoints((res, max)-> res.getVotes()>0.25*max);
+//		setOverlayFromSet(points);
+		for (Point2D line : lines)
+			drawLinePolar(line.getX(), line.getY());
+		
 	}
 	public void handleEnhanceContrast() {
 		showImage(contrast(image, 100, 200, 1.2));
@@ -514,13 +570,13 @@ public class RootLayoutController implements Initializable {
     	double sigma = parameters.getValue().doubleValue();
         ExecutorService executor = Executors.newSingleThreadExecutor();
         BorderSegmentation segmentation = new BorderSegmentation(iterations, sigma,
-                (Set<Point> oBorder) -> setOverlayFromSet(oBorder),new Point(selectionX1,selectionY1),
+                (Collection<Point> oBorder) -> setOverlayFromSet(oBorder),new Point(selectionX1,selectionY1),
                 new Point(selectionX2,selectionY2));
         Intermediator interm = new Intermediator(segmentation, ()->setNextImage(), image);
         executor.submit(interm);
     }
 
-    private void setOverlayFromSet(Set<Point> points){
+    private void setOverlayFromSet(Collection<Point> points){
         Mat result = Mat.zeros(image.rows(),image.cols(),CvType.CV_8UC4);
         for(Point p: points){
             double[] vec = {255,255,0,255};
@@ -642,11 +698,21 @@ public class RootLayoutController implements Initializable {
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 		imageProperty.addListener((observable, before, after)-> {
-			showImage(after);
+			Platform.runLater(()->showImage(after));
 		});
 		overlayImageProperty.addListener((obs, o, n)->{
-			setOverlay(n);
+			Platform.runLater(()->setOverlay(n));
 		});
+		System.out.println(overlayCanvas.getGraphicsContext2D() == null);
+	}
+	public void drawLinePolar(double phi, double rad) {
+		Point point1 = new Point(0, (int) (rad/Math.sin(phi)));
+		Point point2 = new Point(image.width(), (int) ((rad-image.width()*Math.cos(phi))/Math.sin(phi)));
+		System.out.println(point1 + " " + point2);
+		GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
+		gc.setStroke(Color.MAGENTA);
+		gc.setLineWidth(1);
+		gc.strokeLine(point1.x, point1.y, point2.x, point2.y);
 	}
 
 

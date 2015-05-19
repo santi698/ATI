@@ -1,7 +1,9 @@
 package core.border;
 
-import core.helper.Point;
+import java.awt.Point;
+
 import core.masks.Gaussian;
+
 import org.opencv.core.Mat;
 
 public class BorderMat {
@@ -32,17 +34,17 @@ public class BorderMat {
         gaussian = new Gaussian(3,sigma);
     }
 
-    public void set(final Point p, final int value){
-        if(value == -3 && mat[p.x][p.y] != -3){
-            addToInner(p);
-        }else if( value == 3 && mat[p.x][p.y] != 3){
-            addToOuter(p);
-        }else if(value != -3 && mat[p.x][p.y] == -3){
-            removeFromInner(p);
-        }else if(value != 3 && mat[p.x][p.y] == 3){
-            removeFromOutter(p);
+    public void set(final Point loc, final int value){
+        if(value == -3 && mat[loc.x][loc.y] != -3){
+            addToInner(loc);
+        }else if( value == 3 && mat[loc.x][loc.y] != 3){
+            addToOuter(loc);
+        }else if(value != -3 && mat[loc.x][loc.y] == -3){
+            removeFromInner(loc);
+        }else if(value != 3 && mat[loc.x][loc.y] == 3){
+            removeFromOutter(loc);
         }
-        mat[p.x][p.y] = value;
+        mat[loc.x][loc.y] = value;
     }
 
     private void addToInner(final Point p){

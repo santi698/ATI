@@ -1,24 +1,23 @@
 package core.hough;
 
+import java.awt.Point;
 import java.util.LinkedList;
 import java.util.List;
 
-import javafx.geometry.Point2D;
-
 public class HoughResults {
 	private int votes;
-	private List<Point2D> points;
+	private List<Point> points;
 	public HoughResults() {
-		points = new LinkedList<Point2D>();
+		points = new LinkedList<Point>();
 	}
-	public void vote(Point2D point) {
+	public void vote(Point position) {
 		votes++;
-		points.add(point);
+		points.add(position);
 	}
 	public int getVotes() {
 		return votes;
 	}
-	public List<Point2D> getPoints() {
+	public List<Point> getPoints() {
 		return points;
 	}
 }

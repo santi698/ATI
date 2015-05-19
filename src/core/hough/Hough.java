@@ -1,28 +1,29 @@
 package core.hough;
 
+import java.awt.Point;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
-import java.util.function.Function;
-
-import org.opencv.core.Mat;
 
 import javafx.geometry.Point2D;
 
+import org.opencv.core.Mat;
+
 public class Hough {
 	HashMap<Point2D, HoughResults> results;
-	private Function<Point2D, Double> f;
+	private BiFunction<Point, Point2D, Double> f;
 	private double minX;
 	private double maxX;
 	private double minY;
 	private double xStep;
 	private double yStep;
 	private double maxY;
-	private double EPS;
+	private double EPS = 1;
 	private int maxVotes = 0;
 	
-	public Hough(Function<Point2D, Double> f, double minX, double maxX, double xStep, double minY, double maxY, double yStep) {
+	public Hough(BiFunction<Point, Point2D, Double> f, double minX, double maxX, double xStep, double minY, double maxY, double yStep) {
 		this.f = f;
 		this.minX = minX;
 		this.maxX = maxX;
@@ -30,6 +31,7 @@ public class Hough {
 		this.maxY = maxY;
 		this.xStep = xStep;
 		this.yStep = yStep;
+		this.results = new HashMap<Point2D, HoughResults>();
 	}
 
 	public void computeResults(Mat img) {
@@ -39,24 +41,24 @@ public class Hough {
 		for (int i = 0; i < img.width(); i++) {
 			for (int j = 0; j < img.height(); j++) {
 				double color = img.get(j, i)[0];
-				Point2D pixelPosition = new Point2D(i,j);
-				processPixel(color, pixelPosition);
+				Point position = new Point(i,j);
+				processPixel(color, position);
 			}
 		}
 	}
 
-	private void processPixel(double color, Point2D pixelPosition) {
-		for (double x = minX; x < maxX; x+=xStep) {
-			for(double y = minY; y < maxY; y+=yStep) {
-				Point2D point = new Point2D(x, y);
-				
-				if (color < 0.5) {
-					if (f.apply(point) - color < EPS) {
-						if (!results.containsKey(point))
-							results.put(point, new HoughResults());
-						results.get(point).vote(pixelPosition);
-						if (results.get(point).getVotes() > maxVotes)
-							maxVotes = results.get(point).getVotes();
+	private void processPixel(double color, Point position) {
+		for (double x = minX; x <= maxX; x+=xStep) {
+			for(double y = minY; y <= maxY; y+=yStep) {
+				Point2D parameters = new Point2D(x, y);
+				if (color > 0.5) {
+					double lineSimilarity = f.apply(position, parameters);
+					if (lineSimilarity < EPS) {
+						if (!results.containsKey(parameters))
+							results.put(parameters, new HoughResults());
+						results.get(parameters).vote(position);
+						if (results.get(parameters).getVotes() > maxVotes)
+							maxVotes = results.get(parameters).getVotes();
 					}
 				}
 			}
@@ -69,5 +71,13 @@ public class Hough {
 				passingTuples.add(point);
 		});
 		return passingTuples;
+	}
+	public List<Point> getPassingPoints(BiPredicate<HoughResults, Integer> condition) {
+		List<Point> passingPoints = new LinkedList<Point>();
+		results.forEach( (point,result)-> {
+			if (condition.test(result, maxVotes))
+				passingPoints.addAll(result.getPoints());
+		});
+		return passingPoints;
 	}
 }

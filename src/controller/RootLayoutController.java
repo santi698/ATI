@@ -130,6 +130,8 @@ public class RootLayoutController implements Initializable {
 	
 	private int selectionX1, selectionY1, selectionX2, selectionY2, startX, startY;
 
+    private VideoCapture video = null;
+
     LinkedList<Mat> undoList = new LinkedList<Mat>();
     
 	private void drawCircle(double x, double y, double z) {
@@ -137,7 +139,7 @@ public class RootLayoutController implements Initializable {
 		GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
 		gc.setStroke(Color.MAGENTA);
 		gc.setLineWidth(1);
-		gc.strokeOval(x-z/Math.sqrt(2), y-z/Math.sqrt(2), 2*z, 2*z);
+		gc.strokeOval(x - z / Math.sqrt(2), y - z / Math.sqrt(2), 2 * z, 2 * z);
 	}
 
 	public void drawLinePolar(double phi, double rad) {
@@ -338,12 +340,10 @@ public class RootLayoutController implements Initializable {
         File file = chooser.showOpenDialog(mainApp.getPrimaryStage());
         if (file == null)
             return;
-        VideoCapture video = new VideoCapture();
+        video = new VideoCapture();
         video.open(file.getAbsolutePath());
-        Mat mat = new Mat();
         if (video.isOpened()) {
-            video.read(mat);
-            showImage(mat);
+            setNextImage();
         }
     }
 	public void handleCircleDetectHough() {
@@ -626,8 +626,14 @@ public class RootLayoutController implements Initializable {
 		mainApp = main;
 	}
 	private Mat setNextImage(){
-        if(fileList != null && !fileList.isEmpty()){
-            Mat mat = Imgcodecs.imread(fileList.poll().getAbsolutePath());
+        Mat mat = new Mat();
+        if(video != null && video.isOpened()){
+           if(video.read(mat)){
+               showImage(mat);
+               return mat;
+           }
+        }else if(fileList != null && !fileList.isEmpty()){
+            mat = Imgcodecs.imread(fileList.poll().getAbsolutePath());
             if(mat != null && !mat.empty()){
                 showImage(mat);
                 return mat;
@@ -659,21 +665,21 @@ public class RootLayoutController implements Initializable {
 		return;
 	}
 	public void showImage(Mat img) {
-		Platform.runLater(()-> {
-			overlayImage.setImage(matToImage(Mat.zeros(1, 1, CvType.CV_8UC4)));
-			overlayCanvas.getGraphicsContext2D().clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
-			selectionRectangle.setVisible(false);
-			filterMenu.setDisable(false);
-			editMenu.setDisable(false);
-			histogram = histogram(img);
-			Image fxImage = matToImage(img);
-			imageView.setImage(fxImage);
-			undoList.push(image);
-			image = img;
-			updateHistogram();
-			if (undoList.size() > 20) 
-				undoList.removeFirst();
-		});
+		Platform.runLater(() -> {
+            overlayImage.setImage(matToImage(Mat.zeros(1, 1, CvType.CV_8UC4)));
+            overlayCanvas.getGraphicsContext2D().clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
+            selectionRectangle.setVisible(false);
+            filterMenu.setDisable(false);
+            editMenu.setDisable(false);
+            histogram = histogram(img);
+            Image fxImage = matToImage(img);
+            imageView.setImage(fxImage);
+            undoList.push(image);
+            image = img;
+            updateHistogram();
+            if (undoList.size() > 20)
+                undoList.removeFirst();
+        });
 	}
 	public void showImageNewWindow(Mat img, String title) {
 		//TODO

@@ -4,67 +4,65 @@ import java.awt.Point;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 
-import javafx.geometry.Point2D;
+import javafx.geometry.Point3D;
 
 import org.opencv.core.Mat;
 
-public class Hough {
-	Map<Point2D, HoughResults> results;
-	private BiFunction<Point, Point2D, Double> f;
+public class HoughTridimensional {
+	Map<Point3D, HoughResults3D> results;
+	private BiFunction<Point, Point3D, Double> f;
 	private double minX;
 	private double maxX;
 	private double minY;
 	private double xStep;
 	private double yStep;
 	private double maxY;
-	private double EPS = 1/Math.sqrt(2);
+	private double EPS = Math.sqrt(2);
 	private int maxVotes = 0;
-	public Hough(BiFunction<Point, Point2D, Double> f, double minX, double maxX, double xStep, double minY, double maxY, double yStep) {
+	private double minZ;
+	private double maxZ;
+	private double zStep;
+	public HoughTridimensional(BiFunction<Point, Point3D, Double> f, double minX, double maxX, double xStep, double minY, double maxY, double yStep, double minZ, double maxZ, double zStep) {
 		this.f = f;
 		this.minX = minX;
 		this.maxX = maxX;
+		this.xStep = xStep;
 		this.minY = minY;
 		this.maxY = maxY;
-		this.xStep = xStep;
 		this.yStep = yStep;
-		this.results = new ConcurrentHashMap<Point2D, HoughResults>();
+		this.minZ = minZ;
+		this.maxZ = maxZ;
+		this.zStep = zStep;
+		this.results = new ConcurrentHashMap<Point3D, HoughResults3D>();
 	}
 
 	public void computeResults(Mat img) {
 		
 		assert(img.channels() == 1);
-		List<CompletableFuture<?>> futures = new LinkedList<CompletableFuture<?>>();
+		
 		for (int i = 0; i < img.width(); i++) {
 			for (int j = 0; j < img.height(); j++) {
 				double color = img.get(j, i)[0];
 				Point position = new Point(i,j);
-				futures.add(CompletableFuture.runAsync(processPixel(color, position)));
-			}
-		}
-		for (CompletableFuture<?> future : futures) {
-			try {
-				future.get();
-			} catch (Exception e) {
-				e.printStackTrace();
+				processPixel(color, position);
 			}
 		}
 	}
 
-	private Runnable processPixel(double color, Point position) {
-		return ()->{
-			for (double x = minX; x <= maxX; x+=xStep) {
-				for(double y = minY; y <= maxY; y+=yStep) {
-					Point2D parameters = new Point2D(x, y);
+	private void processPixel(double color, Point position) {
+		for (double x = minX; x <= maxX; x+=xStep) {
+			for(double y = minY; y <= maxY; y+=yStep) {
+				for (double z = minZ; z <= maxZ; z+=zStep) {
+					Point3D parameters = new Point3D(x, y, z);
 					if (color > 0.5) {
 						double lineSimilarity = f.apply(position, parameters);
 						if (lineSimilarity < EPS) {
 							if (!results.containsKey(parameters))
-								results.put(parameters, new HoughResults(parameters));
+								results.put(parameters, new HoughResults3D(parameters));
 							results.get(parameters).vote(position);
 							if (results.get(parameters).getVotes() > maxVotes)
 								maxVotes = results.get(parameters).getVotes();
@@ -72,17 +70,17 @@ public class Hough {
 					}
 				}
 			}
-		};
+		}
 	}
-	public List<Point2D> getDetected (BiPredicate<HoughResults, Integer> condition) {
-		List<Point2D> passingTuples = new LinkedList<Point2D>();
+	public List<Point3D> getDetected (BiPredicate<HoughResults3D, Integer> condition) {
+		List<Point3D> passingTuples = new LinkedList<Point3D>();
 		results.forEach( (point,result)-> {
 			if (condition.test(result, maxVotes))
 				passingTuples.add(point);
 		});
 		return passingTuples;
 	}
-	public List<Point> getPassingPoints(BiPredicate<HoughResults, Integer> condition) {
+	public List<Point> getPassingPoints(BiPredicate<HoughResults3D, Integer> condition) {
 		List<Point> passingPoints = new LinkedList<Point>();
 		results.forEach( (point,result)-> {
 			if (condition.test(result, maxVotes))

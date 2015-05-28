@@ -18,6 +18,7 @@ import java.util.function.Function;
 
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Point2D;
+import javafx.geometry.Point3D;
 import javafx.scene.image.Image;
 
 import org.opencv.core.Core;
@@ -51,6 +52,9 @@ import core.operations.BinaryMultiplication;
 public class Util {
 	public static BiFunction<Point, Point2D, Double> line = (position, parameters)-> {
 		return Math.abs(position.x*Math.cos(parameters.getX())+position.y*Math.sin(parameters.getX())-parameters.getY());
+	};
+	public static BiFunction<Point, Point3D, Double> circle = (position, parameters)-> {
+		return Math.abs(Math.pow((position.x-parameters.getX()),2) + Math.pow(position.y-parameters.getY(),2) - Math.pow(parameters.getZ(),2));
 	};
 	public static Mat add (Mat img1, Mat img2) {
 		return compressRangeLinear(new BinaryAddition().apply(img1, img2));

@@ -4,13 +4,13 @@ import java.awt.Point;
 import java.util.LinkedList;
 import java.util.List;
 
-import javafx.geometry.Point2D;
+import javafx.geometry.Point3D;
 
-public class HoughResults {
+public class HoughResults3D {
 	private int votes;
-	private Point2D parameters;
+	private Point3D parameters;
 	private List<Point> points;
-	public HoughResults(Point2D parameters) {
+	public HoughResults3D(Point3D parameters) {
 		points = new LinkedList<Point>();
 		this.parameters = parameters;
 	}
@@ -24,7 +24,7 @@ public class HoughResults {
 	public List<Point> getPoints() {
 		return points;
 	}
-	public Point2D getParameters() {
+	public Point3D getParameters() {
 		return parameters;
 	}
 	public String toString() {

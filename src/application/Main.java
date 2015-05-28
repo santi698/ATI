@@ -7,6 +7,7 @@ import org.opencv.core.Core;
 import controller.RootLayoutController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Cursor;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -33,7 +34,7 @@ public class Main extends Application {
             controller.setMainApp(this);
 
             // Show the scene containing the root layout.
-            Scene scene = new Scene(rootLayout);
+            Scene scene = new Scene(rootLayout);            
             primaryStage.setScene(scene);
             scene.getStylesheets().add("controller/chart.css");
             primaryStage.show();
@@ -49,7 +50,12 @@ public class Main extends Application {
     public Stage getPrimaryStage() {
         return primaryStage;
     }
-
+    public void setWorking() {
+    	primaryStage.getScene().setCursor(Cursor.WAIT);
+    }
+    public void setIdle() {
+    	primaryStage.getScene().setCursor(Cursor.DEFAULT);
+    }
 	public static void main(String[] args) {
 		launch(args);
 	}

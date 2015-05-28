@@ -10,9 +10,14 @@ public class Susan extends Mask
 
     public Susan(final double error){
         this.error = error;
-        double[][] mask = {{0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0}, {0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0},
-                {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
-                {0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0}, {0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0}};
+        double[][] mask = {	{0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0}, 
+        					{0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0},
+        					{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
+        					{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
+        					{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
+        					{0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0},
+        					{0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0}
+		};
         susanMask = mask;
     }
 
@@ -36,8 +41,8 @@ public class Susan extends Mask
             double[] resultColor = new double[image.channels()];
             for (int x = -getSize()/2; x < getSize()/2+1; x++) {
                 for (int y = -getSize()/2; y < getSize()/2+1; y++) {
-                    if(insideBound(x,y,image) && get(x + getSize()/2,y + getSize()/2) != 0) {
-                        double[] localColor = image.get(x + getSize()/2,y + getSize()/2);
+                    if(insideBound(x,y,image) && get(x + getSize()/2, y + getSize()/2) != 0) {
+                        double[] localColor = image.get(x + getSize()/2, y + getSize()/2);
                         for (int h = 0; h < image.channels(); h++) {
 //                            nsum[h] += Math.abs(localColor[h] - originalColor[h]) < 27 ? 1:0;
                             nsum[h] += Math.exp(-Math.pow((localColor[h] - originalColor[h]) / 27, 6));

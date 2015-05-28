@@ -1,21 +1,68 @@
 package controller;
 
-import static core.Util.*;
+import static core.Util.addExpNoise;
+import static core.Util.addGaussianNoise;
+import static core.Util.addRayleighNoise;
+import static core.Util.addSaltAndPepper;
+import static core.Util.anisotropicDiffusion;
+import static core.Util.centeredCircle;
+import static core.Util.centeredSquare;
+import static core.Util.colorscale;
+import static core.Util.compressRangeDynamic;
+import static core.Util.compressRangeLinear;
+import static core.Util.contrast;
+import static core.Util.crop;
+import static core.Util.detectBordersKirsch4;
+import static core.Util.detectBordersLaplacian;
+import static core.Util.detectBordersLaplacianOfGaussian;
+import static core.Util.detectBordersPrewitt;
+import static core.Util.detectBordersPrewitt4D;
+import static core.Util.detectBordersSobel;
+import static core.Util.detectBordersSobel4D;
+import static core.Util.edgeDetectCanny;
+import static core.Util.gaussianFilter;
+import static core.Util.generateExponentialNoise;
+import static core.Util.generateGaussianNoise;
+import static core.Util.generateRayleighNoise;
+import static core.Util.grayscale;
+import static core.Util.highpassFilter;
+import static core.Util.histogram;
+import static core.Util.line;
+import static core.Util.circle;
+import static core.Util.matToImage;
+import static core.Util.meanFilter;
+import static core.Util.medianFilter;
+import static core.Util.monochrome;
+import static core.Util.openRaw;
+import static core.Util.umbralize;
+import static core.Util.umbralizeOtsu;
 
+import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import core.border.BorderSegmentation;
-import core.border.Intermediator;
-import core.helper.Point;
-import core.masks.Susan;
 import javafx.application.Platform;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
+import javafx.geometry.Point2D;
+import javafx.geometry.Point3D;
 import javafx.scene.Node;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.chart.AreaChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
@@ -46,36 +93,61 @@ import javax.imageio.ImageIO;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.videoio.VideoCapture;
 
 import application.Main;
 import core.Util;
-import org.opencv.videoio.VideoCapture;
+import core.border.BorderSegmentation;
+import core.border.Intermediator;
+import core.hough.Hough;
+import core.hough.HoughTridimensional;
+import core.masks.Susan;
 
-public class RootLayoutController {
+public class RootLayoutController implements Initializable {
 	@FXML
 	private Menu editMenu;
+	private LinkedList<File> fileList = null;
 	@FXML
 	private Menu filterMenu;
 	@FXML
 	private AreaChart<Number, Number> histChart;
-	private Mat image;
 	private double[][] histogram;
+	private Mat image;
+	private ObjectProperty<Mat> imageProperty = new SimpleObjectProperty<Mat>();
 	@FXML
 	private ImageView imageView;
 	@FXML
-	private ImageView overlayImage;
-	@FXML
 	private TextArea infoLabel;
-	
 	private Main mainApp;
 	@FXML
-	private Rectangle selectionRectangle;
-	private int selectionX1, selectionY1, selectionX2, selectionY2, startX, startY;
+	private Canvas overlayCanvas;
 	
-	LinkedList<Mat> undoList = new LinkedList<Mat>();
+	@FXML
+	private ImageView overlayImage;
+	private ObjectProperty<Mat> overlayImageProperty = new SimpleObjectProperty<Mat>();
+	@FXML
+	private Rectangle selectionRectangle;
+	
+	private int selectionX1, selectionY1, selectionX2, selectionY2, startX, startY;
 
-    private LinkedList<File> fileList = null;
+    LinkedList<Mat> undoList = new LinkedList<Mat>();
+    
+	private void drawCircle(double x, double y, double z) {
+		System.out.println("circle at: " + x + " " + y + " with radius " + z);
+		GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
+		gc.setStroke(Color.MAGENTA);
+		gc.setLineWidth(1);
+		gc.strokeOval(x-z/Math.sqrt(2), y-z/Math.sqrt(2), 2*z, 2*z);
+	}
 
+	public void drawLinePolar(double phi, double rad) {
+		Point point1 = new Point(0, (int) (rad/Math.sin(phi)));
+		Point point2 = new Point(image.width(), (int) ((rad-image.width()*Math.cos(phi))/Math.sin(phi)));
+		GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
+		gc.setStroke(Color.MAGENTA);
+		gc.setLineWidth(1);
+		gc.strokeLine(point1.x, point1.y, point2.x, point2.y);
+	}
 	public void genCenteredCircle() {
 		int radius = getParameter("Radio").intValue();
 		if (radius > 0)
@@ -89,10 +161,10 @@ public class RootLayoutController {
 	public void genColorscale() {
 		showImage(colorscale(256, 256));
 	}
+
 	public void genGrayscale() {
 		showImage(grayscale(256,256));
 	}
-
 	public Number getParameter(String text) {
         TextInputDialog dialog = new TextInputDialog("");
         dialog.setGraphic(null);
@@ -210,6 +282,7 @@ public class RootLayoutController {
 		int t = parameters.getKey().intValue();
 		int func = getParameter("Ingrese la función (Leclerc = 1, Lorentz = 2, Cte = 3):").intValue();
 		long time1 = System.currentTimeMillis();
+		mainApp.setWorking();
 		if (func == 1) { //Leclerc
 			task = CompletableFuture.supplyAsync(()-> anisotropicDiffusion(image, (c)-> c.operate((v)-> Math.exp(-(v*v)/(k*k))), t));
 		}
@@ -219,7 +292,11 @@ public class RootLayoutController {
 		} else { //Isotropica
 			task = CompletableFuture.supplyAsync(()->anisotropicDiffusion(image, (c)-> c.operate((v)-> 1.0), t));
 		}
-		task.thenAccept((img)->{Platform.runLater(()->showImage(img)); System.out.println("Computado en: " + (System.currentTimeMillis()-time1)/1000f + " segundos.");});
+		task.thenAccept((img)->{
+			Platform.runLater(()->showImage(img));
+			mainApp.setIdle();
+			System.out.println("Computado en: " + (System.currentTimeMillis()-time1)/1000f + " segundos.");
+		});
 		
 	}
 	public void handleBinaryOperation() {
@@ -227,6 +304,65 @@ public class RootLayoutController {
 		dialog.showAndWait();
 		if (dialog.wasAccepted())
 			showImage(dialog.getResult());
+	}
+	public void handleBorderFolderLoad(){
+        DirectoryChooser chooser = new DirectoryChooser();
+        File file = chooser.showDialog(mainApp.getPrimaryStage());
+        if (file == null)
+            return;
+        if(file.isDirectory()){
+            fileList = new LinkedList<>(Arrays.asList(file.listFiles()));
+            setNextImage();
+        }else{
+            Alert alert = new Alert(AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setContentText("Formato no soportado.");
+            alert.showAndWait();
+            return;
+        }
+
+    }
+	public void handleBorderSegmentation(){
+    	Pair<Number, Number> parameters = getTwoParameters("Cantidad de iteraciones", "Sigma");
+    	int iterations = parameters.getKey().intValue();
+    	double sigma = parameters.getValue().doubleValue();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        BorderSegmentation segmentation = new BorderSegmentation(iterations, sigma,
+                (Collection<Point> oBorder) -> setOverlayFromSet(oBorder),new Point(selectionX1,selectionY1),
+                new Point(selectionX2,selectionY2));
+        Intermediator interm = new Intermediator(segmentation, ()->setNextImage(), image);
+        executor.submit(interm);
+    }
+	public void handleBorderVideoLoad(){
+        FileChooser chooser = new FileChooser();
+        File file = chooser.showOpenDialog(mainApp.getPrimaryStage());
+        if (file == null)
+            return;
+        VideoCapture video = new VideoCapture();
+        video.open(file.getAbsolutePath());
+        Mat mat = new Mat();
+        if (video.isOpened()) {
+            video.read(mat);
+            showImage(mat);
+        }
+    }
+	public void handleCircleDetectHough() {
+		HoughTridimensional hough = new HoughTridimensional(circle, 0, image.width(), image.width()/100, 0, image.height(), image.height()/100, 10, Math.min(image.width(), image.height())/8, 2);
+		mainApp.setWorking();
+		CompletableFuture.runAsync(()-> {
+			hough.computeResults(edgeDetectCanny(image, 10));
+			List<Point3D> circles = hough.getDetected((res, max)-> {
+				if (res.getParameters().getZ() < 5) {
+					System.out.println("perimeter = " + res.getParameters().getZ()*2*Math.PI);
+					System.out.println("votes = " + res.getVotes());
+				}
+				return res.getVotes() > res.getParameters().getZ()*2*Math.PI/6;
+			});
+			for (Point3D circle : circles)
+				drawCircle(circle.getX(), circle.getY(), circle.getZ());
+			System.out.println(circles.size() + " círculos encontrados");
+		}).thenRun(()->mainApp.setIdle());
+		
 	}
 	public void handleClick(MouseEvent event) {
 //		selectionRectangle.setVisible(false);
@@ -262,6 +398,10 @@ public class RootLayoutController {
 		selectionRectangle.setWidth(selectionX2-selectionX1);
 		selectionRectangle.setHeight(selectionY2-selectionY1);
 		selectionRectangle.setVisible(true);
+	}
+	public void handleEdgeDetectCanny() {
+		double sigma = getParameter("Sigma (SD)").doubleValue();
+		showImage(edgeDetectCanny(image, sigma));
 	}
 	public void handleEnhanceContrast() {
 		showImage(contrast(image, 100, 200, 1.2));
@@ -322,16 +462,33 @@ public class RootLayoutController {
 	public void handleKirsch4() {
 		showImage(detectBordersKirsch4(image));
 	}
-	public void handleLaplacian() {
+
+    public void handleLaplacian() {
 		double umbral = getParameter("Umbral").doubleValue();
 		showImage(detectBordersLaplacian(image, umbral));
 	}
-	public void handleLaplacianOfGaussian() {
+
+    public void handleLaplacianOfGaussian() {
 		Pair<Number, Number> parameters = getTwoParameters("Tamaño", "Umbral");
 		int size = parameters.getKey().intValue();
 		double threshold = parameters.getValue().doubleValue();
 		showImage(detectBordersLaplacianOfGaussian(image, size, threshold));
 	}
+
+    public void handleLineDetectHough() {
+		Hough hough = new Hough(line, -Math.PI, Math.PI, Math.PI/1000, 0, 200, 10);
+		mainApp.setWorking();
+		CompletableFuture.runAsync(()-> {
+			hough.computeResults(edgeDetectCanny(image, 10));
+			List<Point2D> lines = hough.getDetected((res, max)-> res.getVotes()>0.5*max);
+	//		List<Point> points = hough.getPassingPoints((res, max)-> res.getVotes()>0.25*max);
+	//		setOverlayFromSet(points);
+			for (Point2D line : lines)
+				drawLinePolar(line.getX(), line.getY());
+		}).thenRun(()->mainApp.setIdle());
+		
+	}
+
 	public void handleLoad() {
 		FileChooser chooser = new FileChooser();
 		try {
@@ -368,58 +525,6 @@ public class RootLayoutController {
 			e1.printStackTrace();
 		}	
 	}
-
-    public void handleBorderFolderLoad(){
-        DirectoryChooser chooser = new DirectoryChooser();
-        File file = chooser.showDialog(mainApp.getPrimaryStage());
-        if (file == null)
-            return;
-        if(file.isDirectory()){
-            fileList = new LinkedList<>(Arrays.asList(file.listFiles()));
-            setNextImage();
-        }else{
-            Alert alert = new Alert(AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setContentText("Formato no soportado.");
-            alert.showAndWait();
-            return;
-        }
-
-    }
-
-    private Mat setNextImage(){
-        if(fileList != null && !fileList.isEmpty()){
-            Mat mat = Imgcodecs.imread(fileList.poll().getAbsolutePath());
-            if(mat != null && !mat.empty()){
-                showImage(mat);
-                return mat;
-            }else{
-                return setNextImage();
-            }
-        }
-        return null;
-    }
-
-    public void handleBorderVideoLoad(){
-        FileChooser chooser = new FileChooser();
-        File file = chooser.showOpenDialog(mainApp.getPrimaryStage());
-        if (file == null)
-            return;
-        String fileName = file.getName();
-        String extension = "";
-        int i = fileName.lastIndexOf('.');
-        if (i >= 0)
-            extension = fileName.substring(i + 1);
-
-        VideoCapture video = new VideoCapture();
-        video.open(file.getAbsolutePath());
-        Mat mat = new Mat();
-        if (video.isOpened()) {
-            video.read(mat);
-            showImage(mat);
-        }
-    }
-
 	public void handleMeanFilter() {
 		int size = getParameter("Tamaño").intValue();
 		showImage(meanFilter(image, size));
@@ -481,6 +586,11 @@ public class RootLayoutController {
 	public void handleSobel4() {
 		showImage(detectBordersSobel4D(image));
 	}
+	public void handleSusan(){
+        Susan susan = new Susan(0.1);
+        Mat result = susan.apply(image);
+        showImage(result);
+    }
 	public void handleUmbralizeGlobal() {
 		showImage(umbralize(image, histogram));
 	}
@@ -489,43 +599,58 @@ public class RootLayoutController {
 		if (umbral > 0)
 			showImage(umbralize(image, umbral));
 	}
-	public void handleUmbralizeOtsu() {
+
+    public void handleUmbralizeOtsu() {
 		showImage(umbralizeOtsu(image, histogram));
 	}
-	public void handleUndo () {
+
+    public void handleUndo () {
 		image = undoList.pop();
 		showImage(image);
 	}
 
-    public void handleSusan(){
-        Susan susan = new Susan(0.1);
-        Mat result = susan.apply(image);
-        showImage(result);
-    }
-
-    public void handleBorderSegmentation(){
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        BorderSegmentation segmentation = new BorderSegmentation(5, 10,
-                (Set<Point> oBorder) -> setOverlayFromSet(oBorder),new Point(selectionX1,selectionY1),
-                new Point(selectionX2,selectionY2));
-        Intermediator interm = new Intermediator(segmentation, ()->setNextImage(), image);
-        executor.submit(interm);
-    }
-
-    private void setOverlayFromSet(Set<Point> points){
-        Mat result = Mat.zeros(image.rows(),image.cols(),CvType.CV_8UC4);
-        for(Point p: points){
-            double[] vec = {255,255,255,1};
-            result.put(p.y,p.x,vec);
-        }
-        selectionRectangle.setVisible(false);
-        setOverlay(result);
-
-    }
+    @Override
+	public void initialize(URL location, ResourceBundle resources) {
+		imageProperty.addListener((observable, before, after)-> {
+			Platform.runLater(()->showImage(after));
+		});
+		overlayImageProperty.addListener((obs, o, n)->{
+			Platform.runLater(()->setOverlay(n));
+		});
+		overlayCanvas.setOpacity(0.5);
+		overlayImage.setOpacity(0.5);
+		selectionRectangle.setVisible(true);
+	}
 
 	public void setMainApp(Main main) {
 		mainApp = main;
 	}
+	private Mat setNextImage(){
+        if(fileList != null && !fileList.isEmpty()){
+            Mat mat = Imgcodecs.imread(fileList.poll().getAbsolutePath());
+            if(mat != null && !mat.empty()){
+                showImage(mat);
+                return mat;
+            }else{
+                return setNextImage();
+            }
+        }
+        return null;
+    }
+	public void setOverlay(Mat img) {
+		Platform.runLater(()-> {
+			overlayImage.setImage(matToImage(img));
+			overlayImage.resize(img.width(), img.height());
+		});
+	}
+	private void setOverlayFromSet(Collection<Point> points){
+        Mat result = Mat.zeros(image.rows(),image.cols(),CvType.CV_8UC4);
+        for(Point p: points){
+            double[] vec = {255,255,0,255};
+            result.put(p.y,p.x,vec);
+        }
+        overlayImageProperty.set(result);
+    }
 	public void showError(String message) {
 		Alert alert = new Alert(AlertType.ERROR);
 		alert.setContentText(message);
@@ -534,21 +659,21 @@ public class RootLayoutController {
 		return;
 	}
 	public void showImage(Mat img) {
-		selectionRectangle.setVisible(false);
-		filterMenu.setDisable(false);
-		editMenu.setDisable(false);
-		histogram = histogram(img);
-		Image fxImage = matToImage(img);
-		imageView.setImage(fxImage);
-		undoList.push(image);
-		image = img;
-		//updateHistogram();
-		if (undoList.size() > 20) 
-			undoList.removeFirst();
-	}
-	public void setOverlay(Mat img) {
-		overlayImage.setImage(matToImage(img));
-		overlayImage.resize(img.width(), img.height());
+		Platform.runLater(()-> {
+			overlayImage.setImage(matToImage(Mat.zeros(1, 1, CvType.CV_8UC4)));
+			overlayCanvas.getGraphicsContext2D().clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
+			selectionRectangle.setVisible(false);
+			filterMenu.setDisable(false);
+			editMenu.setDisable(false);
+			histogram = histogram(img);
+			Image fxImage = matToImage(img);
+			imageView.setImage(fxImage);
+			undoList.push(image);
+			image = img;
+			updateHistogram();
+			if (undoList.size() > 20) 
+				undoList.removeFirst();
+		});
 	}
 	public void showImageNewWindow(Mat img, String title) {
 		//TODO

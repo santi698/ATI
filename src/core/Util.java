@@ -1,5 +1,6 @@
 package core;
 
+import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.File;
@@ -12,10 +13,12 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import core.masks.*;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.geometry.Point2D;
+import javafx.geometry.Point3D;
 import javafx.scene.image.Image;
 
 import org.opencv.core.Core;
@@ -32,11 +35,27 @@ import core.filters.NoiseFilter.NoiseType;
 import core.filters.RayleighNoiseGenerator;
 import core.filters.SaltAndPepperNoiseFilter;
 import core.filters.Umbral;
+import core.masks.DirectionalMask.Direction;
+import core.masks.Gaussian;
+import core.masks.Highpass;
+import core.masks.Kirsh;
+import core.masks.Laplacian;
+import core.masks.LaplacianOfGaussian;
+import core.masks.Means;
+import core.masks.Prewitt;
+import core.masks.Sobel;
+import core.masks.UnnamedMask;
 import core.operations.BinaryAddition;
 import core.operations.BinaryDifference;
 import core.operations.BinaryMultiplication;
 
 public class Util {
+	public static BiFunction<Point, Point2D, Double> line = (position, parameters)-> {
+		return Math.abs(position.x*Math.cos(parameters.getX())+position.y*Math.sin(parameters.getX())-parameters.getY());
+	};
+	public static BiFunction<Point, Point3D, Double> circle = (position, parameters)-> {
+		return Math.abs(Math.pow((position.x-parameters.getX()),2) + Math.pow(position.y-parameters.getY(),2) - Math.pow(parameters.getZ(),2));
+	};
 	public static Mat add (Mat img1, Mat img2) {
 		return compressRangeLinear(new BinaryAddition().apply(img1, img2));
 	}
@@ -325,7 +344,10 @@ public class Util {
 			for (int j = 0; j < img.height(); j++) {
 				double[] c = img.get(j, i);
 				for (int k=0; k < img.channels(); k++) {
-					histogram[(int)(c[k])][k] += 1d/pixels;	
+					if (c[k] > 255)
+						System.out.println("Valor fuera de rango: " + c[k]);
+					else
+						histogram[(int)(c[k])][k] += 1d/pixels;
 				}
 			}
 		}
@@ -491,7 +513,6 @@ public class Util {
 	            max = between;            
 	        }
 		}
-		System.out.println(threshold);
 		return new Umbral(threshold).apply(img);
 	}
 	public static Mat findzerocrosses (Mat img, double slopeThreshold) {
@@ -549,5 +570,89 @@ public class Util {
 			}
 		}
 		return res;
+	}
+	public static Mat hysteresisUmbralization(Mat img) {
+		Mat result = compressRangeLinear(img);
+		result = umbralizeOtsu(result, histogram(result));
+		for (int i = 0; i < result.width(); i++) {
+			for (int j = 0; j < result.height(); j++) {
+				double[] center = result.get(j, i);
+				List<double[]> neighbours = neighbours(result, new Point(i, j));
+				for (int k = 0; k < center.length; k++) {
+					if (center[k] == 255) {
+						boolean isIsolated = true;
+						for (double[] color : neighbours) {
+							if (color[k] == 255) {
+								isIsolated = false;
+								break;
+							}
+						}
+						if (isIsolated)
+							center[k] = 0;
+					}
+				}
+				img.put(j, i, center);
+			}
+		}
+		return img;
+	}
+	public static Mat removeNonMaximums(Mat img, Mat xImg, Mat yImg) {
+		Mat result = img.clone();
+		for (int i = 0; i < img.width(); i++) {
+			for (int j = 0; j < img.height(); j++) {
+				double[] center = img.get(j, i);
+				for (int k = 0; k < center.length; k++) {
+					Point[] direction = getDirections(xImg, yImg, new Point(i,j));
+					double[] color1 = img.get(j-direction[k].y, i-direction[k].x);
+					if (color1 == null) color1 = new double[]{Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY};
+					double[] color2 = img.get(j+direction[k].y, i+direction[k].x);
+					if (color2 == null) color2 = new double[]{Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY};
+					if (color1[k] > center[k]  || color2[k] > center[k])
+						center[k] = 0;
+				}
+				result.put(j, i, center);
+			}
+		}
+		return result;
+	}
+	private static Point[] getDirections(Mat xImg, Mat yImg, Point point) {		
+		double[] yColor = yImg.get(point.y, point.x);
+		double[] xColor = xImg.get(point.y, point.x);
+		Point[] directions = new Point[yColor.length];
+		for (int k = 0; k < yColor.length; k++) {
+			double angle = Math.toDegrees(Math.atan(yColor[k]/xColor[k])+ Math.PI/2);
+			if ((angle > 0 && angle < 22.5) || (angle > 157.5 && angle < 180))
+				directions[k] = new Point(0,1);
+			else if (angle > 22.5 && angle < 67.5)
+				directions[k] = new Point(-1,1);
+			else if (angle > 67.5 && angle < 112.5)
+				directions[k] = new Point(1,0);
+			else
+				directions[k] = new Point(1,1);
+		}
+		return directions;
+	}
+
+	public static List<double[]> neighbours(Mat img, Point position) {
+		List<double[]> neighbours = new LinkedList<double[]>();
+		for (int x = -1; x <= 1; x++) {
+			for (int y = -1; y <=1; y++) {
+				double[] color = img.get(position.y + y, position.x + x);
+				if (!(x == 0 && y == 0) && color != null)
+					neighbours.add(color);
+			}
+		}
+		return neighbours;
+	}
+	public static Mat edgeDetectCanny(Mat img, double sigma) {
+		Mat result = monochrome(img);
+		if (sigma != 0)
+			result = gaussianFilter(img, 3, sigma);
+		Mat resultX = new Sobel().apply(result, Direction.HORIZONTAL);
+		Mat resultY = new Sobel().apply(result, Direction.VERTICAL);
+		result = new Sobel().apply(result);
+		result = removeNonMaximums(result, resultX, resultY);
+		hysteresisUmbralization(result);
+		return result;
 	}
 }

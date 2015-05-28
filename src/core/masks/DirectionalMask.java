@@ -5,7 +5,7 @@ import java.util.Arrays;
 import org.opencv.core.Mat;
 
 public abstract class DirectionalMask {
-	protected enum Direction {HORIZONTAL, VERTICAL, DIAG1, DIAG2}
+	public enum Direction {HORIZONTAL, VERTICAL, DIAG1, DIAG2}
 	private static int[][] yMask;
 	private static int[][] xMask;
 	private static int[][] xyMask;
@@ -112,6 +112,36 @@ public abstract class DirectionalMask {
 					}
 				}
 				result.put(j, i, max(resultColorX, resultColorY, resultColorXY, resultColorYX));
+			}
+		}
+		return result;
+	}
+	public Mat apply(Mat image, Direction direction) {
+		Mat result = image.clone();
+		for (int i = 0; i < image.width(); i++) {
+			for (int j = 0; j < image.height(); j++) {
+				double[] resultColor = new double[image.channels()];
+				for (int x = -getSize()/2; x < getSize()/2+1; x++) {
+					for (int y = -getSize()/2; y < getSize()/2+1; y++) {
+						double[] color = null;
+						if ((i+x < 0 && j+y < 0) || (i+x < 0 && j+y > image.height()-1) || (i+x > image.width()-1 && j+y < 0) || (i+x>image.width()-1 && j+y > image.height()-1))
+							color = new double[]{0,0,0};
+						else if (i+x < 0)
+							color = image.get(j+y, 0);
+						else if (i+x > image.width()-1)
+							color  = image.get(j+y, image.width()-1);
+						else if (j+y < 0)
+							color = image.get(0, i+x);
+						else if (j+y > image.height()-1)
+							color = image.get(image.height()-1, i+x);
+						else
+							color = image.get(j+y, i+x);
+						for(int k = 0; k < image.channels(); k++) {
+							resultColor[k] += get(x, y, direction)*color[k];
+						}
+					}
+				}
+				result.put(j, i, resultColor);
 			}
 		}
 		return result;

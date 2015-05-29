@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -137,7 +138,7 @@ public class RootLayoutController implements Initializable {
 		GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
 		gc.setStroke(Color.MAGENTA);
 		gc.setLineWidth(1);
-		gc.strokeOval(x-z/Math.sqrt(2), y-z/Math.sqrt(2), 2*z, 2*z);
+		gc.strokeOval(x-z, y-z, 2*z, 2*z);
 	}
 
 	public void drawLinePolar(double phi, double rad) {
@@ -311,7 +312,8 @@ public class RootLayoutController implements Initializable {
         if (file == null)
             return;
         if(file.isDirectory()){
-            fileList = new LinkedList<>(Arrays.asList(file.listFiles()));
+        	fileList = new LinkedList<>(Arrays.asList(file.listFiles()));
+            fileList.sort((f1,f2)->f1.getName().compareTo(f2.getName()));
             setNextImage();
         }else{
             Alert alert = new Alert(AlertType.ERROR);
@@ -347,12 +349,13 @@ public class RootLayoutController implements Initializable {
         }
     }
 	public void handleCircleDetectHough() {
-		HoughTridimensional hough = new HoughTridimensional(circle, 0, image.width(), image.width()/100, 0, image.height(), image.height()/100, 10, Math.min(image.width(), image.height())/8, 2);
+		
+		HoughTridimensional hough = new HoughTridimensional(circle, 0, image.width(), image.width()/100, 0, image.height(), image.height()/100, 25, 40, 1);
 		mainApp.setWorking();
 		CompletableFuture.runAsync(()-> {
-			hough.computeResults(edgeDetectCanny(image, 10));
+			hough.computeResults(edgeDetectCanny(image, 10, 50, 200));
 			List<Point3D> circles = hough.getDetected((res, max)-> {
-				if (res.getParameters().getZ() < 5) {
+				if (res.getParameters().getZ() > 5 && res.getParameters().getZ() < 15) {
 					System.out.println("perimeter = " + res.getParameters().getZ()*2*Math.PI);
 					System.out.println("votes = " + res.getVotes());
 				}
@@ -401,7 +404,7 @@ public class RootLayoutController implements Initializable {
 	}
 	public void handleEdgeDetectCanny() {
 		double sigma = getParameter("Sigma (SD)").doubleValue();
-		showImage(edgeDetectCanny(image, sigma));
+		showImage(edgeDetectCanny(image, sigma, 50, 200));
 	}
 	public void handleEnhanceContrast() {
 		showImage(contrast(image, 100, 200, 1.2));
@@ -476,11 +479,11 @@ public class RootLayoutController implements Initializable {
 	}
 
     public void handleLineDetectHough() {
-		Hough hough = new Hough(line, -Math.PI, Math.PI, Math.PI/1000, 0, 200, 10);
+		Hough hough = new Hough(line, -Math.PI, Math.PI, Math.PI/100, 0, 200, 10);
 		mainApp.setWorking();
 		CompletableFuture.runAsync(()-> {
-			hough.computeResults(edgeDetectCanny(image, 10));
-			List<Point2D> lines = hough.getDetected((res, max)-> res.getVotes()>0.5*max);
+			hough.computeResults(edgeDetectCanny(image, 10, 50, 200));
+			List<Point2D> lines = hough.getDetected((res, max)-> res.getVotes()>0.35*max);
 	//		List<Point> points = hough.getPassingPoints((res, max)-> res.getVotes()>0.25*max);
 	//		setOverlayFromSet(points);
 			for (Point2D line : lines)
@@ -676,7 +679,7 @@ public class RootLayoutController implements Initializable {
 		});
 	}
 	public void showImageNewWindow(Mat img, String title) {
-		//TODO
+		//  
 	}
 	@SuppressWarnings("unchecked")
 	private void updateHistogram() {

@@ -195,6 +195,7 @@ public class Util {
 		return img;
 	}
 	public static Mat compressRangeLinear(Mat img) {
+		img = img.clone();
 		double[] max = new double[] {Double.MIN_VALUE, Double.MIN_VALUE, Double.MIN_VALUE};
 		double[] min = new double[] {Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE};
 		for (int i = 0; i < img.width(); i++) {
@@ -377,7 +378,7 @@ public class Util {
 	}
 	public static double median(double... ds) {
 		Arrays.sort(ds);
-		return ds[ds.length/2];
+		return ds[(int)Math.ceil(ds.length/2)];
 	}
 	public static Mat medianFilter(Mat image, int size) {
 		Mat result = image.clone();
@@ -647,14 +648,13 @@ public class Util {
 		return neighbours;
 	}
 	public static Mat edgeDetectCanny(Mat img, double sigma, double umbral1, double umbral2) {
-		Mat result = monochrome(img);
+		Mat result = img.clone();
 		if (sigma != 0)
-			result = gaussianFilter(img, 3, sigma);
+			result = gaussianFilter(result, 3, sigma);
 		Mat resultX = new Sobel().apply(result, Direction.HORIZONTAL);
 		Mat resultY = new Sobel().apply(result, Direction.VERTICAL);
-		result = new Sobel().apply(result);
-		result = removeNonMaximums(result, resultX, resultY);
-		hysteresisUmbralization(result, umbral1, umbral2);
+		result = removeNonMaximums(new Sobel().apply(result), resultX, resultY);
+		result = hysteresisUmbralization(result, umbral1, umbral2);
 		return result;
 	}
 }

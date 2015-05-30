@@ -43,7 +43,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -102,6 +101,9 @@ import core.border.BorderSegmentation;
 import core.border.Intermediator;
 import core.hough.Hough;
 import core.hough.HoughTridimensional;
+import core.hough.HoughResults;
+import core.masks.DirectionalMask.Direction;
+import core.masks.Sobel;
 import core.masks.Susan;
 
 public class RootLayoutController implements Initializable {
@@ -150,6 +152,20 @@ public class RootLayoutController implements Initializable {
 		gc.setStroke(Color.MAGENTA);
 		gc.setLineWidth(1);
 		gc.strokeLine(point1.x, point1.y, point2.x, point2.y);
+	}
+	public void polyLineFromPoints(List<Point> points) {
+		GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
+		gc.setStroke(Color.MAGENTA);
+		gc.setLineWidth(1);
+		double[] xPoints = new double[points.size()];
+		double[] yPoints = new double[points.size()];
+		for (int i = 0; i< points.size(); i++) {
+			xPoints[i] = points.get(i).getX();
+			yPoints[i] = points.get(i).getY();
+			i++;
+		}
+		gc.moveTo(xPoints[0], yPoints[0]);
+		gc.strokePolyline(xPoints, yPoints, points.size()-1);
 	}
 	public void genCenteredCircle() {
 		int radius = getParameter("Radio").intValue();
@@ -404,7 +420,7 @@ public class RootLayoutController implements Initializable {
 	}
 	public void handleEdgeDetectCanny() {
 		double sigma = getParameter("Sigma (SD)").doubleValue();
-		showImage(edgeDetectCanny(image, sigma, 50, 200));
+		showImage(edgeDetectCanny(image, sigma, 20, 200));
 	}
 	public void handleEnhanceContrast() {
 		showImage(contrast(image, 100, 200, 1.2));
@@ -462,6 +478,15 @@ public class RootLayoutController implements Initializable {
 		else
 			showImage(highpassFilter(image, size));
 	}
+	public void handleHysteresisUmbralization() {
+		Pair<Number, Number> params = getTwoParameters("Umbral 1", "Umbral 2");
+		double umbral1 = params.getKey().doubleValue();
+		double umbral2 = params.getValue().doubleValue();
+		showImage(Util.hysteresisUmbralization(image, umbral1, umbral2));
+	}
+	public void handleSupressNonMaximums() {
+		showImage(Util.removeNonMaximums(new Sobel().apply(image), new Sobel().apply(image, Direction.HORIZONTAL), new Sobel().apply(image, Direction.VERTICAL)));
+	}
 	public void handleKirsch4() {
 		showImage(detectBordersKirsch4(image));
 	}
@@ -477,17 +502,19 @@ public class RootLayoutController implements Initializable {
 		double threshold = parameters.getValue().doubleValue();
 		showImage(detectBordersLaplacianOfGaussian(image, size, threshold));
 	}
-
+    public void handleLinearRangeCompression() {
+    	showImage(compressRangeLinear(image));
+    }
     public void handleLineDetectHough() {
 		Hough hough = new Hough(line, -Math.PI, Math.PI, Math.PI/100, 0, 200, 10);
 		mainApp.setWorking();
 		CompletableFuture.runAsync(()-> {
-			hough.computeResults(edgeDetectCanny(image, 10, 50, 200));
-			List<Point2D> lines = hough.getDetected((res, max)-> res.getVotes()>0.35*max);
-	//		List<Point> points = hough.getPassingPoints((res, max)-> res.getVotes()>0.25*max);
-	//		setOverlayFromSet(points);
-			for (Point2D line : lines)
+			hough.computeResults(edgeDetectCanny(image, 0, 20, 200));
+			Collection<HoughResults> passingResults = hough.getPassingResults((res, max)-> res.getVotes()>0.65*max);
+			for (HoughResults result : passingResults) {
+				Point2D line = result.getParameters();
 				drawLinePolar(line.getX(), line.getY());
+			}
 		}).thenRun(()->mainApp.setIdle());
 		
 	}
@@ -670,6 +697,8 @@ public class RootLayoutController implements Initializable {
 	public void showImage(Mat img) {
 		Platform.runLater(() -> {
             overlayImage.setImage(matToImage(Mat.zeros(1, 1, CvType.CV_8UC4)));
+            overlayCanvas.setWidth(img.width());
+            overlayCanvas.setHeight(img.height());
             overlayCanvas.getGraphicsContext2D().clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
             selectionRectangle.setVisible(false);
             filterMenu.setDisable(false);

@@ -55,17 +55,20 @@ public class BorderSegmentation{
                     }
                 }
             }
+            calcMat.disableAvg();
         }else{
             calcMat.recalculateRgbValues(image);
         }
+        calcMat.printAverageByBand();
+
         operate();
     }
 
     private void operate(){
         boolean finish = false;
         for(int w = 0; w < iterations && !finish; w++) {
-            finish = cycle(calcMat, calcMat::calculateVelocity, 10, true);
-            cycle(calcMat, (p) -> (-calcMat.getGaussian(p)), 10, false);
+            finish = cycle(calcMat, calcMat::calculateVelocity, 1, true);
+            cycle(calcMat, (p) -> (-calcMat.getGaussian(p)), 1, false);
         }
     }
 

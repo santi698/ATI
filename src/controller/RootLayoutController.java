@@ -51,6 +51,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.sun.xml.internal.bind.v2.runtime.output.SAXOutput;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -112,7 +113,7 @@ public class RootLayoutController implements Initializable {
 	@FXML
 	private AreaChart<Number, Number> histChart;
 	private double[][] histogram;
-	private Mat image;
+	private Mat image = null;
 	private ObjectProperty<Mat> imageProperty = new SimpleObjectProperty<Mat>();
 	@FXML
 	private ImageView imageView;
@@ -314,6 +315,7 @@ public class RootLayoutController implements Initializable {
             return;
         if(file.isDirectory()){
             fileList = new LinkedList<>(Arrays.asList(file.listFiles()));
+            fileList.sort((f1,f2)->f1.getName().compareTo(f2.getName()));
             setNextImage();
         }else{
             Alert alert = new Alert(AlertType.ERROR);
@@ -626,16 +628,26 @@ public class RootLayoutController implements Initializable {
 		mainApp = main;
 	}
 	private Mat setNextImage(){
+
         Mat mat = new Mat();
         if(video != null && video.isOpened()){
            if(video.read(mat)){
-               showImage(mat);
+               if(image == null){
+                   showImage(mat);
+               }else {
+                   imageView.setImage(matToImage(mat));
+               }
                return mat;
            }
         }else if(fileList != null && !fileList.isEmpty()){
             mat = Imgcodecs.imread(fileList.poll().getAbsolutePath());
             if(mat != null && !mat.empty()){
-                showImage(mat);
+                if(image == null){
+                    System.out.println("new image");
+                    showImage(mat);
+                }else {
+                    imageView.setImage(matToImage(mat));
+                }
                 return mat;
             }else{
                 return setNextImage();

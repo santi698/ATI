@@ -15,6 +15,7 @@ public class BorderMat {
     private double innerLength = 0;
     private double outerLength = 0;
     private Gaussian gaussian;
+    private boolean changeAvg = true;
 
     public BorderMat(final Mat mat, double sigma){
         this.mat = new double[mat.width()][mat.height()];
@@ -34,15 +35,21 @@ public class BorderMat {
         gaussian = new Gaussian(3,sigma);
     }
 
+    public void disableAvg(){
+        this.changeAvg = false;
+    }
+
     public void set(final Point loc, final int value){
-        if(value == -3 && mat[loc.x][loc.y] != -3){
-            addToInner(loc);
-        }else if( value == 3 && mat[loc.x][loc.y] != 3){
-            addToOuter(loc);
-        }else if(value != -3 && mat[loc.x][loc.y] == -3){
-            removeFromInner(loc);
-        }else if(value != 3 && mat[loc.x][loc.y] == 3){
-            removeFromOutter(loc);
+        if(changeAvg) {
+            if (value == -3 && mat[loc.x][loc.y] != -3) {
+                addToInner(loc);
+            } else if (value == 3 && mat[loc.x][loc.y] != 3) {
+                addToOuter(loc);
+            } else if (value != -3 && mat[loc.x][loc.y] == -3) {
+                removeFromInner(loc);
+            } else if (value != 3 && mat[loc.x][loc.y] == 3) {
+                removeFromOutter(loc);
+            }
         }
         mat[loc.x][loc.y] = value;
     }
@@ -75,14 +82,15 @@ public class BorderMat {
         outerLength--;
     }
 
-    public double calculateVelocity(final Point p){
-        final double[] rgb = original.get(p.y,p.x);
-        double p1sum = 0, p2sum = 0;
-        for(int i = 0; i< original.channels(); i++){
-            p1sum += Math.pow((innerRgb[i]/innerLength - rgb[i]),2);
-            p2sum += Math.pow((outerRgb[i]/outerLength - rgb[i]),2);
+    public double calculateVelocity(final Point p) {
+        final double[] rgb = original.get(p.y, p.x);
+        double div = Math.pow(256,2) * original.channels();
+        double p1sum = 0, p2sum = 0, sum;
+        for (int i = 0; i < original.channels(); i++) {
+            p1sum += Math.pow((innerRgb[i] / innerLength - rgb[i]), 2);
+//            p2sum += Math.pow((outerRgb[i] / outerLength - rgb[i]), 2);
         }
-        return Math.sqrt(p2sum) - Math.sqrt(p1sum);
+        return 50 - Math.sqrt(p1sum);// Math.log((1-(Math.sqrt(p1sum)/div)) / (1-(Math.sqrt(p2sum)/div)));
     }
 
     public double get(final Point p){
@@ -121,34 +129,8 @@ public class BorderMat {
         }
     }
 
-    private void reset(){
-        for(int h = 0; h<original.channels(); h++){
-            innerRgb[h] = 0;
-            outerRgb[h] = 0;
-        }
-        outerLength = 0;
-        innerLength = 0;
-    }
-
     public void recalculateRgbValues(Mat original){
         this.original = original;
-        reset();
-        for(int i = 0; i< mat.length; i++){
-            for(int w = 0; w < mat[i].length; w++){
-                if(mat[i][w] == 3){
-                    for(int h = 0; h<original.channels(); h++){
-                        outerRgb[h] += original.get(w,i)[h];
-
-                    }
-                    outerLength++;
-                }else if(mat[i][w] == -3){
-                    for(int h = 0; h<original.channels(); h++){
-                        innerRgb[h] += original.get(w,i)[h];
-                    }
-                    innerLength++;
-                }
-            }
-        }
     }
 
     public void printAverageByBand(){

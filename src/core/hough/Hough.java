@@ -1,6 +1,7 @@
 package core.hough;
 
 import java.awt.Point;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +82,11 @@ public class Hough {
 				passingTuples.add(point);
 		});
 		return passingTuples;
+	}
+	public Collection<HoughResults> getPassingResults (BiPredicate<HoughResults, Integer> condition) {
+		Collection<HoughResults> collection = results.values();
+		collection.removeIf((hr)->!condition.test(hr, maxVotes));
+		return collection;
 	}
 	public List<Point> getPassingPoints(BiPredicate<HoughResults, Integer> condition) {
 		List<Point> passingPoints = new LinkedList<Point>();

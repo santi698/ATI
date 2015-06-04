@@ -102,6 +102,9 @@ import core.border.BorderSegmentation;
 import core.border.Intermediator;
 import core.hough.Hough;
 import core.hough.HoughTridimensional;
+import core.hough.HoughResults;
+import core.masks.DirectionalMask.Direction;
+import core.masks.Sobel;
 import core.masks.Susan;
 
 public class RootLayoutController implements Initializable {
@@ -140,7 +143,7 @@ public class RootLayoutController implements Initializable {
 		GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
 		gc.setStroke(Color.MAGENTA);
 		gc.setLineWidth(1);
-		gc.strokeOval(x - z / Math.sqrt(2), y - z / Math.sqrt(2), 2 * z, 2 * z);
+		gc.strokeOval(x-z, y-z, 2*z, 2*z);
 	}
 
 	public void drawLinePolar(double phi, double rad) {
@@ -150,6 +153,20 @@ public class RootLayoutController implements Initializable {
 		gc.setStroke(Color.MAGENTA);
 		gc.setLineWidth(1);
 		gc.strokeLine(point1.x, point1.y, point2.x, point2.y);
+	}
+	public void polyLineFromPoints(List<Point> points) {
+		GraphicsContext gc = overlayCanvas.getGraphicsContext2D();
+		gc.setStroke(Color.MAGENTA);
+		gc.setLineWidth(1);
+		double[] xPoints = new double[points.size()];
+		double[] yPoints = new double[points.size()];
+		for (int i = 0; i< points.size(); i++) {
+			xPoints[i] = points.get(i).getX();
+			yPoints[i] = points.get(i).getY();
+			i++;
+		}
+		gc.moveTo(xPoints[0], yPoints[0]);
+		gc.strokePolyline(xPoints, yPoints, points.size()-1);
 	}
 	public void genCenteredCircle() {
 		int radius = getParameter("Radio").intValue();
@@ -314,7 +331,7 @@ public class RootLayoutController implements Initializable {
         if (file == null)
             return;
         if(file.isDirectory()){
-            fileList = new LinkedList<>(Arrays.asList(file.listFiles()));
+        	fileList = new LinkedList<>(Arrays.asList(file.listFiles()));
             fileList.sort((f1,f2)->f1.getName().compareTo(f2.getName()));
             setNextImage();
         }else{
@@ -349,12 +366,13 @@ public class RootLayoutController implements Initializable {
         }
     }
 	public void handleCircleDetectHough() {
-		HoughTridimensional hough = new HoughTridimensional(circle, 0, image.width(), image.width()/100, 0, image.height(), image.height()/100, 10, Math.min(image.width(), image.height())/8, 2);
+		
+		HoughTridimensional hough = new HoughTridimensional(circle, 0, image.width(), image.width()/100, 0, image.height(), image.height()/100, 25, 40, 1);
 		mainApp.setWorking();
 		CompletableFuture.runAsync(()-> {
-			hough.computeResults(edgeDetectCanny(image, 10));
+			hough.computeResults(edgeDetectCanny(image, 10, 50, 200));
 			List<Point3D> circles = hough.getDetected((res, max)-> {
-				if (res.getParameters().getZ() < 5) {
+				if (res.getParameters().getZ() > 5 && res.getParameters().getZ() < 15) {
 					System.out.println("perimeter = " + res.getParameters().getZ()*2*Math.PI);
 					System.out.println("votes = " + res.getVotes());
 				}
@@ -403,7 +421,7 @@ public class RootLayoutController implements Initializable {
 	}
 	public void handleEdgeDetectCanny() {
 		double sigma = getParameter("Sigma (SD)").doubleValue();
-		showImage(edgeDetectCanny(image, sigma));
+		showImage(edgeDetectCanny(image, sigma, 20, 200));
 	}
 	public void handleEnhanceContrast() {
 		showImage(contrast(image, 100, 200, 1.2));
@@ -461,6 +479,15 @@ public class RootLayoutController implements Initializable {
 		else
 			showImage(highpassFilter(image, size));
 	}
+	public void handleHysteresisUmbralization() {
+		Pair<Number, Number> params = getTwoParameters("Umbral 1", "Umbral 2");
+		double umbral1 = params.getKey().doubleValue();
+		double umbral2 = params.getValue().doubleValue();
+		showImage(Util.hysteresisUmbralization(image, umbral1, umbral2));
+	}
+	public void handleSupressNonMaximums() {
+		showImage(Util.removeNonMaximums(new Sobel().apply(image), new Sobel().apply(image, Direction.HORIZONTAL), new Sobel().apply(image, Direction.VERTICAL)));
+	}
 	public void handleKirsch4() {
 		showImage(detectBordersKirsch4(image));
 	}
@@ -476,17 +503,19 @@ public class RootLayoutController implements Initializable {
 		double threshold = parameters.getValue().doubleValue();
 		showImage(detectBordersLaplacianOfGaussian(image, size, threshold));
 	}
-
+    public void handleLinearRangeCompression() {
+    	showImage(compressRangeLinear(image));
+    }
     public void handleLineDetectHough() {
-		Hough hough = new Hough(line, -Math.PI, Math.PI, Math.PI/1000, 0, 200, 10);
+		Hough hough = new Hough(line, -Math.PI, Math.PI, Math.PI/100, 0, 200, 10);
 		mainApp.setWorking();
 		CompletableFuture.runAsync(()-> {
-			hough.computeResults(edgeDetectCanny(image, 10));
-			List<Point2D> lines = hough.getDetected((res, max)-> res.getVotes()>0.5*max);
-	//		List<Point> points = hough.getPassingPoints((res, max)-> res.getVotes()>0.25*max);
-	//		setOverlayFromSet(points);
-			for (Point2D line : lines)
+			hough.computeResults(edgeDetectCanny(image, 0, 20, 200));
+			Collection<HoughResults> passingResults = hough.getPassingResults((res, max)-> res.getVotes()>0.65*max);
+			for (HoughResults result : passingResults) {
+				Point2D line = result.getParameters();
 				drawLinePolar(line.getX(), line.getY());
+			}
 		}).thenRun(()->mainApp.setIdle());
 		
 	}
@@ -688,6 +717,8 @@ public class RootLayoutController implements Initializable {
 	public void showImage(Mat img) {
 		Platform.runLater(() -> {
             overlayImage.setImage(matToImage(Mat.zeros(1, 1, CvType.CV_8UC4)));
+            overlayCanvas.setWidth(img.width());
+            overlayCanvas.setHeight(img.height());
             overlayCanvas.getGraphicsContext2D().clearRect(0, 0, overlayCanvas.getWidth(), overlayCanvas.getHeight());
             selectionRectangle.setVisible(false);
             filterMenu.setDisable(false);
@@ -703,7 +734,7 @@ public class RootLayoutController implements Initializable {
         });
 	}
 	public void showImageNewWindow(Mat img, String title) {
-		//TODO
+		//  
 	}
 	@SuppressWarnings("unchecked")
 	private void updateHistogram() {

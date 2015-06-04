@@ -195,6 +195,7 @@ public class Util {
 		return img;
 	}
 	public static Mat compressRangeLinear(Mat img) {
+		img = img.clone();
 		double[] max = new double[] {Double.MIN_VALUE, Double.MIN_VALUE, Double.MIN_VALUE};
 		double[] min = new double[] {Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE};
 		for (int i = 0; i < img.width(); i++) {
@@ -377,7 +378,7 @@ public class Util {
 	}
 	public static double median(double... ds) {
 		Arrays.sort(ds);
-		return ds[ds.length/2];
+		return ds[(int)Math.ceil(ds.length/2)];
 	}
 	public static Mat medianFilter(Mat image, int size) {
 		Mat result = image.clone();
@@ -508,7 +509,7 @@ public class Util {
 			mB = sumB/wB;
 			mF = (sum - sumB)/wF;
 			between = wB * wF * (mB - mF) * (mB - mF);
-			if ( between > max ) {
+			if ( between >= max ) {
 	            threshold = i;
 	            max = between;            
 	        }
@@ -571,25 +572,27 @@ public class Util {
 		}
 		return res;
 	}
-	public static Mat hysteresisUmbralization(Mat img) {
+	public static Mat hysteresisUmbralization(Mat img, double umbral1, double umbral2) {
 		Mat result = compressRangeLinear(img);
-		result = umbralizeOtsu(result, histogram(result));
 		for (int i = 0; i < result.width(); i++) {
 			for (int j = 0; j < result.height(); j++) {
 				double[] center = result.get(j, i);
 				List<double[]> neighbours = neighbours(result, new Point(i, j));
 				for (int k = 0; k < center.length; k++) {
-					if (center[k] == 255) {
+					if (center[k] < umbral2 && center[k] > umbral1) {
 						boolean isIsolated = true;
 						for (double[] color : neighbours) {
-							if (color[k] == 255) {
+							if (color[k] > umbral1) {
 								isIsolated = false;
 								break;
 							}
 						}
 						if (isIsolated)
 							center[k] = 0;
-					}
+						else
+							center[k] = 255;
+					} else if (center[k] < umbral1) center[k] = 0;
+					else if (center[k] > umbral2) center[k] = 255;
 				}
 				img.put(j, i, center);
 			}
@@ -644,15 +647,14 @@ public class Util {
 		}
 		return neighbours;
 	}
-	public static Mat edgeDetectCanny(Mat img, double sigma) {
-		Mat result = monochrome(img);
+	public static Mat edgeDetectCanny(Mat img, double sigma, double umbral1, double umbral2) {
+		Mat result = img.clone();
 		if (sigma != 0)
-			result = gaussianFilter(img, 3, sigma);
+			result = gaussianFilter(result, 3, sigma);
 		Mat resultX = new Sobel().apply(result, Direction.HORIZONTAL);
 		Mat resultY = new Sobel().apply(result, Direction.VERTICAL);
-		result = new Sobel().apply(result);
-		result = removeNonMaximums(result, resultX, resultY);
-		hysteresisUmbralization(result);
+		result = removeNonMaximums(new Sobel().apply(result), resultX, resultY);
+		result = hysteresisUmbralization(result, umbral1, umbral2);
 		return result;
 	}
 }

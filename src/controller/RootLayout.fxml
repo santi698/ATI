@@ -76,10 +76,13 @@
           <items>
             <MenuItem mnemonicParsing="false" onAction="#handleMonochrome" text="Monocromo" />
             <MenuItem mnemonicParsing="false" onAction="#handleNegative" text="Negativo" />
+                  <MenuItem mnemonicParsing="false" onAction="#handleLinearRangeCompression" text="Compresion de rango lineal" />
+                  <MenuItem mnemonicParsing="false" onAction="#handleSupressNonMaximums" text="Supresion de no maximos" />
             <MenuItem mnemonicParsing="false" onAction="#handleEnhanceContrast" text="Aumentar contraste" />
             <Menu mnemonicParsing="false" text="Umbralizar">
               <items>
                 <MenuItem mnemonicParsing="false" onAction="#handleUmbralizeManual" text="Manual" />
+                        <MenuItem mnemonicParsing="false" onAction="#handleHysteresisUmbralization" text="Con histeresis" />
                 <MenuItem mnemonicParsing="false" onAction="#handleUmbralizeGlobal" text="Global" />
                 <MenuItem mnemonicParsing="false" onAction="#handleUmbralizeOtsu" text="Otsu" />
               </items>

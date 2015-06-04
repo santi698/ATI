@@ -7,6 +7,7 @@ import static core.Util.addSaltAndPepper;
 import static core.Util.anisotropicDiffusion;
 import static core.Util.centeredCircle;
 import static core.Util.centeredSquare;
+import static core.Util.circle;
 import static core.Util.colorscale;
 import static core.Util.compressRangeDynamic;
 import static core.Util.compressRangeLinear;
@@ -28,7 +29,6 @@ import static core.Util.grayscale;
 import static core.Util.highpassFilter;
 import static core.Util.histogram;
 import static core.Util.line;
-import static core.Util.circle;
 import static core.Util.matToImage;
 import static core.Util.meanFilter;
 import static core.Util.medianFilter;
@@ -51,7 +51,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.sun.xml.internal.bind.v2.runtime.output.SAXOutput;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -101,8 +100,8 @@ import core.Util;
 import core.border.BorderSegmentation;
 import core.border.Intermediator;
 import core.hough.Hough;
-import core.hough.HoughTridimensional;
 import core.hough.HoughResults;
+import core.hough.HoughTridimensional;
 import core.masks.DirectionalMask.Direction;
 import core.masks.Sobel;
 import core.masks.Susan;
@@ -367,16 +366,16 @@ public class RootLayoutController implements Initializable {
     }
 	public void handleCircleDetectHough() {
 		
-		HoughTridimensional hough = new HoughTridimensional(circle, 0, image.width(), Math.cbrt(image.width())/100, 0, image.height(), image.height()/100, 15, 35, 1);
+		HoughTridimensional hough = new HoughTridimensional(circle, 0, image.width(), image.width()/100, 0, image.height(), image.height()/100, 15, 35, 1);
 		mainApp.setWorking();
 		CompletableFuture.runAsync(()-> {
-			hough.computeResults(edgeDetectCanny(image, 50, 50, 200));
+			hough.computeResults(edgeDetectCanny(image, 10, 50, 200));
 			List<Point3D> circles = hough.getDetected((res, max)-> {
 				if (res.getParameters().getZ() > 5 && res.getParameters().getZ() < 15) {
 					System.out.println("perimeter = " + res.getParameters().getZ()*2*Math.PI);
 					System.out.println("votes = " + res.getVotes());
 				}
-				return res.getVotes() > res.getParameters().getZ()*2*Math.PI/4;
+				return res.getVotes() > res.getParameters().getZ()*2*Math.PI/6;
 			});
 			for (Point3D circle : circles)
 				drawCircle(circle.getX(), circle.getY(), circle.getZ());

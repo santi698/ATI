@@ -21,7 +21,7 @@ public class HoughTridimensional {
 	private double xStep;
 	private double yStep;
 	private double maxY;
-	private double EPS = Math.sqrt(2);
+	private double EPS = 4*Math.sqrt(2);
 	private int maxVotes = 0;
 	private double minZ;
 	private double maxZ;

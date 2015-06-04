@@ -367,16 +367,16 @@ public class RootLayoutController implements Initializable {
     }
 	public void handleCircleDetectHough() {
 		
-		HoughTridimensional hough = new HoughTridimensional(circle, 0, image.width(), image.width()/100, 0, image.height(), image.height()/100, 25, 40, 1);
+		HoughTridimensional hough = new HoughTridimensional(circle, 0, image.width(), Math.cbrt(image.width())/100, 0, image.height(), image.height()/100, 15, 35, 1);
 		mainApp.setWorking();
 		CompletableFuture.runAsync(()-> {
-			hough.computeResults(edgeDetectCanny(image, 10, 50, 200));
+			hough.computeResults(edgeDetectCanny(image, 50, 50, 200));
 			List<Point3D> circles = hough.getDetected((res, max)-> {
 				if (res.getParameters().getZ() > 5 && res.getParameters().getZ() < 15) {
 					System.out.println("perimeter = " + res.getParameters().getZ()*2*Math.PI);
 					System.out.println("votes = " + res.getVotes());
 				}
-				return res.getVotes() > res.getParameters().getZ()*2*Math.PI/6;
+				return res.getVotes() > res.getParameters().getZ()*2*Math.PI/4;
 			});
 			for (Point3D circle : circles)
 				drawCircle(circle.getX(), circle.getY(), circle.getZ());

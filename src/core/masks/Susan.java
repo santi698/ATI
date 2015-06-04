@@ -6,11 +6,11 @@ public class Susan extends Mask
 {
    private final double [][] susanMask;
 
-    private final double error;
+    private final double min;
+    private final double max;
 
-    public Susan(final double error){
-        this.error = error;
-        double[][] mask = {	{0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0}, 
+    public Susan(final double min, final double max){
+        double[][] mask = {	{0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0},
         					{0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0},
         					{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
         					{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0},
@@ -19,12 +19,14 @@ public class Susan extends Mask
         					{0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 0.0}
 		};
         susanMask = mask;
+        this.min = min;
+        this.max = max;
     }
 
 
     @Override
     public double get(int x, int y) {
-        return susanMask[x][y];
+        return susanMask[x+getSize()/2][y+getSize()/2];
     }
 
     @Override
@@ -39,23 +41,23 @@ public class Susan extends Mask
             double nsum[] = new double[image.channels()];
             double[] originalColor = image.get(j,i);
             double[] resultColor = new double[image.channels()];
-            for (int x = -getSize()/2; x < getSize()/2+1; x++) {
-                for (int y = -getSize()/2; y < getSize()/2+1; y++) {
-                    if(insideBound(x,y,image) && get(x + getSize()/2, y + getSize()/2) != 0) {
-                        double[] localColor = image.get(x + getSize()/2, y + getSize()/2);
+            for (int x = -getSize()/2; x <= getSize()/2; x++) {
+                for (int y = -getSize()/2; y <= getSize()/2; y++) {
+                    if(insideBound(i+x,j+y,image) && get(x, y) == 1) {
+                        double[] localColor = image.get(j + y, i + x);
                         for (int h = 0; h < image.channels(); h++) {
-//                            nsum[h] += Math.abs(localColor[h] - originalColor[h]) < 27 ? 1:0;
-                            nsum[h] += Math.exp(-Math.pow((localColor[h] - originalColor[h]) / 27, 6));
+                            if(Math.abs(originalColor[h] - localColor[h]) < 27d ){
+                                nsum[h] += 1d;
+                            }
+                            //nsum[h] += Math.exp(-Math.pow((originalColor[h] - localColor[h]) / 27, 6));
                         }
                     }
                 }
             }
             for(int h = 0; h<image.channels(); h++){
                 double s = 1d - nsum[h]/37d;
-                if(s >= 0.5 - error && s <= 0.5 + error){
-                    resultColor[h] = 255;
-                }else if(s >= 0.75 - error && s <= 0.75 + error){
-                    resultColor[h] = 255;
+                if(s >= min && s <= max){
+                    resultColor[h] += 255;
                 }else{
                     resultColor[h] = 0;
                 }

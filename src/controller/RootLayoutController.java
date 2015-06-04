@@ -588,8 +588,17 @@ public class RootLayoutController implements Initializable {
 	public void handleSobel4() {
 		showImage(detectBordersSobel4D(image));
 	}
-	public void handleSusan(){
-        Susan susan = new Susan(0.1);
+
+	public void handleSusanBorder(){
+        double error = getParameter("Error").doubleValue();
+        Susan susan = new Susan(0.5 - error, 0.5 + error);
+        Mat result = susan.apply(image);
+        showImage(result);
+    }
+
+    public void handleSusanCorner(){
+        double error = getParameter("Error").doubleValue();
+        Susan susan = new Susan(0.75 - error, 0.75 + error);
         Mat result = susan.apply(image);
         showImage(result);
     }

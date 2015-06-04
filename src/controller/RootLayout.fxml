@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.input.*?>
-<?import javafx.scene.canvas.*?>
 <?import java.lang.*?>
 <?import java.util.*?>
+<?import javafx.scene.canvas.*?>
 <?import javafx.scene.chart.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.*?>
+<?import javafx.scene.input.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.paint.*?>
 <?import javafx.scene.shape.*?>
 <?import javafx.scene.text.*?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.RootLayoutController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/2.2" fx:controller="controller.RootLayoutController">
   <center>
     <SplitPane dividerPositions="0.6270903010033445" prefHeight="400.0" prefWidth="640.0" BorderPane.alignment="CENTER">
       <items>
@@ -21,7 +21,7 @@
             <ImageView fx:id="imageView" onMouseClicked="#handleClick" onMouseDragged="#handleDrag" onMousePressed="#handlePress" pickOnBounds="true" preserveRatio="true" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0" />
             <Rectangle fx:id="selectionRectangle" arcHeight="5.0" arcWidth="5.0" fill="#ffffff41" height="182.0" mouseTransparent="true" smooth="false" stroke="#ffffff80" visible="false" width="223.0" />
             <ImageView fx:id="overlayImage" mouseTransparent="true" pickOnBounds="true" preserveRatio="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
-                  <Canvas fx:id="overlayCanvas" height="369.0" mouseTransparent="true" width="372.0" />
+            <Canvas fx:id="overlayCanvas" height="369.0" mouseTransparent="true" width="372.0" />
           </children>
         </AnchorPane>
         <AnchorPane maxWidth="200.0" minHeight="300.0" minWidth="220.0" prefHeight="160.0" prefWidth="200.0">
@@ -61,17 +61,18 @@
             <MenuItem mnemonicParsing="false" onAction="#handleQuit" text="Salir" />
           </items>
         </Menu>
-        <Menu fx:id="editMenu" disable="true" mnemonicParsing="false" text="Editar">
+        <Menu disable="true" mnemonicParsing="false" text="Editar" fx:id="editMenu">
           <items>
             <MenuItem mnemonicParsing="false" onAction="#handleUndo" text="Deshacer">
-                     <accelerator>
-                        <KeyCodeCombination alt="UP" code="Z" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
-                     </accelerator></MenuItem>
+              <accelerator>
+                <KeyCodeCombination alt="UP" code="Z" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+              </accelerator>
+            </MenuItem>
             <MenuItem mnemonicParsing="false" onAction="#handleCrop" text="Recortar a la seleccion" />
             <MenuItem mnemonicParsing="false" onAction="#handleBinaryOperation" text="Operacion Binaria..." />
           </items>
         </Menu>
-        <Menu fx:id="filterMenu" disable="true" mnemonicParsing="false" text="Filtros">
+        <Menu disable="true" mnemonicParsing="false" text="Filtros" fx:id="filterMenu">
           <items>
             <MenuItem mnemonicParsing="false" onAction="#handleMonochrome" text="Monocromo" />
             <MenuItem mnemonicParsing="false" onAction="#handleNegative" text="Negativo" />
@@ -134,15 +135,16 @@
             </Menu>
           </items>
         </Menu>
-            <Menu mnemonicParsing="false" text="Detectores">
-              <items>
-                  <MenuItem mnemonicParsing="false" onAction="#handleEdgeDetectCanny" text="Canny" />
-          <MenuItem mnemonicParsing="false" onAction="#handleSusan" text="Susan" />
-          <MenuItem mnemonicParsing="false" onAction="#handleBorderSegmentation" text="Segmentar Bordes" />
-                  <MenuItem mnemonicParsing="false" onAction="#handleLineDetectHough" text="Detectar rectas" />
-                  <MenuItem mnemonicParsing="false" onAction="#handleCircleDetectHough" text="Detectar circulos" />
-              </items>
-            </Menu>
+        <Menu mnemonicParsing="false" text="Detectores">
+          <items>
+            <MenuItem mnemonicParsing="false" onAction="#handleEdgeDetectCanny" text="Canny" />
+            <MenuItem mnemonicParsing="false" onAction="#handleSusanBorder" text="Susan Borde" />
+            <MenuItem mnemonicParsing="false" onAction="#handleSusanCorner" text="Susan Esquina" />
+            <MenuItem mnemonicParsing="false" onAction="#handleBorderSegmentation" text="Segmentar Bordes" />
+            <MenuItem mnemonicParsing="false" onAction="#handleLineDetectHough" text="Detectar rectas" />
+            <MenuItem mnemonicParsing="false" onAction="#handleCircleDetectHough" text="Detectar circulos" />
+          </items>
+        </Menu>
       </menus>
     </MenuBar>
   </top>

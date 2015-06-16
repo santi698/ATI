@@ -147,6 +147,7 @@
             <MenuItem mnemonicParsing="false" onAction="#handleLineDetectHough" text="Detectar rectas" />
             <MenuItem mnemonicParsing="false" onAction="#handleCircleDetectHough" text="Detectar circulos" />
                   <MenuItem mnemonicParsing="false" onAction="#handleHarrisCornerDet" text="Harris" />
+                  <MenuItem mnemonicParsing="false" onAction="#handleSIFT" text="SIFT" />
           </items>
         </Menu>
       </menus>

@@ -24,7 +24,10 @@ import javafx.scene.image.Image;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Scalar;
+import org.opencv.features2d.FeatureDetector;
+import org.opencv.features2d.Features2d;
 
 import core.filters.ExponentialNoiseGenerator;
 import core.filters.GaussianNoiseGenerator;
@@ -437,7 +440,7 @@ public class Util {
 		return new Negative().apply(img);
 	}
 	public static Mat openRaw(File file, int width, int height) throws IOException {
-		Mat img = new Mat (height, width, CvType.CV_32FC1);
+		Mat img = new Mat (height, width, CvType.CV_8UC1);
 		byte[] buffer = Files.readAllBytes(Paths.get(file.getPath()));
 		img.put(0, 0, buffer);
 		return img;
@@ -684,5 +687,20 @@ public class Util {
 			}
 		}
 		return points;
+	}
+	public static List<Mat> SIFT(List<Mat> images) {
+		/*
+		List<MatOfKeyPoint> keypoints = new LinkedList<MatOfKeyPoint>();
+		LinkedList<Mat> outList = new LinkedList<Mat>();
+		FeatureDetector sift = FeatureDetector.create(org.opencv.features2d.FeatureDetector.SURF);
+		sift.detect(images, keypoints);
+		for (int i = 0; i < images.size(); i++) {
+			Mat outImage = new Mat(images.get(i).size(), images.get(i).type());
+			Features2d.drawKeypoints(images.get(i), keypoints.get(i), outImage);
+			outList.push(outImage);
+		}
+		return outList;
+		*/ //TODO
+		return null;
 	}
 }

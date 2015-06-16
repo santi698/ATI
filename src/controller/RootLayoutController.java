@@ -610,6 +610,9 @@ public class RootLayoutController implements Initializable {
 			}
 		}
 	}
+	public void handleSIFT() {
+		new SIFTDialog(image).showAndWait();
+	}
 	public void handleSobel() {
 		showImage(detectBordersSobel(image));
 	}

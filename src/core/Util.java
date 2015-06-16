@@ -689,10 +689,9 @@ public class Util {
 		return points;
 	}
 	public static List<Mat> SIFT(List<Mat> images) {
-		/*
 		List<MatOfKeyPoint> keypoints = new LinkedList<MatOfKeyPoint>();
 		LinkedList<Mat> outList = new LinkedList<Mat>();
-		FeatureDetector sift = FeatureDetector.create(org.opencv.features2d.FeatureDetector.SURF);
+		FeatureDetector sift = FeatureDetector.create(org.opencv.features2d.FeatureDetector.ORB);
 		sift.detect(images, keypoints);
 		for (int i = 0; i < images.size(); i++) {
 			Mat outImage = new Mat(images.get(i).size(), images.get(i).type());
@@ -700,7 +699,5 @@ public class Util {
 			outList.push(outImage);
 		}
 		return outList;
-		*/ //TODO
-		return null;
 	}
 }

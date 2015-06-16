@@ -437,7 +437,7 @@ public class Util {
 		return new Negative().apply(img);
 	}
 	public static Mat openRaw(File file, int width, int height) throws IOException {
-		Mat img = new Mat (height, width, CvType.CV_8UC1);
+		Mat img = new Mat (height, width, CvType.CV_32FC1);
 		byte[] buffer = Files.readAllBytes(Paths.get(file.getPath()));
 		img.put(0, 0, buffer);
 		return img;
@@ -656,5 +656,33 @@ public class Util {
 		result = removeNonMaximums(new Sobel().apply(result), resultX, resultY);
 		result = hysteresisUmbralization(result, umbral1, umbral2);
 		return result;
+	}
+	public static List<Point>harrisCornerDet(Mat img, double sigma, double threshold) {
+		List<Point> points = new LinkedList<Point>();
+		Mat dx = new Sobel().apply(img, Direction.HORIZONTAL);
+		Mat dy = new Sobel().apply(img, Direction.VERTICAL);
+		Mat dx2 = multiply(dx, dx);
+		Mat dy2 = multiply(dy, dy);
+		Mat dxy = multiply(dx, dy);
+		Gaussian g = new Gaussian(7, sigma);
+		dx2 = g.apply(dx2);
+		dy2 = g.apply(dy2);
+		dxy = g.apply(dxy);
+		double k = 0.04;
+		for (int i = 0; i < img.width(); i++) {
+			for (int j = 0; j < img.height(); j++) {
+				double[] dx2c = dx2.get(j, i);
+				double[] dy2c = dy2.get(j, i);
+				double[] dxyc = dxy.get(j, i);
+				for (int n = 0; n < img.channels(); n++) {
+					double c = (dx2c[n]*dy2c[n] - Math.pow(dxyc[n], 2)) - k*Math.pow((dx2c[n] + dy2c[n]), 2);
+					if (c > 0 && Math.abs(c) > threshold) {
+						points.add(new Point(i, j));
+						break;
+					}
+				}
+			}
+		}
+		return points;
 	}
 }

@@ -461,6 +461,11 @@ public class RootLayoutController implements Initializable {
 		if (psi > 0)
 			showImage(compressRangeDynamic(generateRayleighNoise(width, height, 1, psi)));
 	}
+	public void handleHarrisCornerDet() {
+		Pair<Number, Number> pars = getTwoParameters("Sigma", "Umbral");
+		List<Point> points = Util.harrisCornerDet(image, pars.getKey().doubleValue(), pars.getValue().doubleValue());
+		setOverlayFromSet(points);
+	}
 	public void handleHighpassFilter() {
 		int size = getParameter("Tamaño").intValue();
 		if (size < 1) {
@@ -541,6 +546,7 @@ public class RootLayoutController implements Initializable {
 						alert.showAndWait();
 						return;
 					}
+					myPicture.convertTo(myPicture, CvType.CV_32FC3);
 			}
 			
 			showImage(myPicture);

@@ -84,13 +84,13 @@ public class BorderMat {
 
     public double calculateVelocity(final Point p) {
         final double[] rgb = original.get(p.y, p.x);
-        double div = Math.pow(256,2) * original.channels();
-        double p1sum = 0, p2sum = 0, sum;
+        double div = Math.pow(255,2) * original.channels();
+        double p1sum = 0, p2sum = 0;
         for (int i = 0; i < original.channels(); i++) {
             p1sum += Math.pow((innerRgb[i] / innerLength - rgb[i]), 2);
-//            p2sum += Math.pow((outerRgb[i] / outerLength - rgb[i]), 2);
+            p2sum += Math.pow((outerRgb[i] / outerLength - rgb[i]), 2);
         }
-        return 50 - Math.sqrt(p1sum);// Math.log((1-(Math.sqrt(p1sum)/div)) / (1-(Math.sqrt(p2sum)/div)));
+        return Math.log((1 - (Math.sqrt(p1sum)/div)) / (1 - (Math.sqrt(p2sum)/div)));
     }
 
     public double get(final Point p){

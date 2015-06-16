@@ -370,13 +370,7 @@ public class RootLayoutController implements Initializable {
 		mainApp.setWorking();
 		CompletableFuture.runAsync(()-> {
 			hough.computeResults(edgeDetectCanny(image, 10, 50, 200));
-			List<Point3D> circles = hough.getDetected((res, max)-> {
-				if (res.getParameters().getZ() > 5 && res.getParameters().getZ() < 15) {
-					System.out.println("perimeter = " + res.getParameters().getZ()*2*Math.PI);
-					System.out.println("votes = " + res.getVotes());
-				}
-				return res.getVotes() > res.getParameters().getZ()*2*Math.PI/6;
-			});
+			List<Point3D> circles = hough.getDetected((res, max)-> res.getVotes() > res.getParameters().getZ()*2*Math.PI*0.2);
 			for (Point3D circle : circles)
 				drawCircle(circle.getX(), circle.getY(), circle.getZ());
 			System.out.println(circles.size() + " círculos encontrados");

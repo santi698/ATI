@@ -59,7 +59,7 @@ public class BorderSegmentation{
         }else{
             calcMat.recalculateRgbValues(image);
         }
-        calcMat.printAverageByBand();
+//        calcMat.printAverageByBand();
 
         operate();
     }

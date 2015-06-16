@@ -13,7 +13,7 @@ import javafx.geometry.Point3D;
 import org.opencv.core.Mat;
 
 public class HoughTridimensional {
-	Map<Point3D, HoughResults3D> results;
+	private Map<Point3D, HoughResults3D> results;
 	private BiFunction<Point, Point3D, Double> f;
 	private double minX;
 	private double maxX;

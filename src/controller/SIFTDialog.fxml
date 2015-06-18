@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="480.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+   <bottom>
+      <AnchorPane prefHeight="100.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+         <children>
+            <Button layoutX="464.0" layoutY="165.0" mnemonicParsing="false" onAction="#handleCancel" text="Salir" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="80.0" />
+            <Button layoutX="540.0" layoutY="165.0" mnemonicParsing="false" onAction="#handleApply" text="Aplicar" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="0.0" />
+         </children>
+         <BorderPane.margin>
+            <Insets right="10.0" />
+         </BorderPane.margin>
+      </AnchorPane>
+   </bottom>
+   <left>
+      <AnchorPane prefHeight="441.0" prefWidth="331.0" BorderPane.alignment="CENTER">
+         <children>
+            <ImageView fx:id="img1" fitHeight="212.0" fitWidth="273.0" layoutX="33.0" layoutY="94.0" pickOnBounds="true" preserveRatio="true" AnchorPane.bottomAnchor="94.0" AnchorPane.topAnchor="94.0" />
+         </children>
+      </AnchorPane>
+   </left>
+   <right>
+      <AnchorPane prefHeight="409.0" prefWidth="304.0" BorderPane.alignment="CENTER">
+         <children>
+            <ImageView fx:id="img2" fitHeight="212.0" fitWidth="281.0" layoutX="12.0" layoutY="94.0" pickOnBounds="true" preserveRatio="true" AnchorPane.bottomAnchor="94.0" AnchorPane.topAnchor="94.0" />
+            <Button layoutX="82.0" layoutY="36.0" mnemonicParsing="false" onAction="#loadImg2" text="Cargar imagen 2..." />
+         </children>
+      </AnchorPane>
+   </right>
+</BorderPane>

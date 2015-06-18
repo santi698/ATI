@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -23,9 +24,13 @@ import javafx.scene.image.Image;
 
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
+import org.opencv.core.DMatch;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Scalar;
+import org.opencv.features2d.DescriptorExtractor;
+import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.features2d.Features2d;
 
@@ -60,7 +65,7 @@ public class Util {
 		return Math.abs(Math.pow((position.x-parameters.getX()),2) + Math.pow(position.y-parameters.getY(),2) - Math.pow(parameters.getZ(),2));
 	};
 	public static Mat add (Mat img1, Mat img2) {
-		return compressRangeLinear(new BinaryAddition().apply(img1, img2));
+		return new BinaryAddition().apply(img1, img2);
 	}
 	
 	public static Mat addExpNoise(Mat image, double lambda) {
@@ -434,7 +439,7 @@ public class Util {
 		return channels.get(0);
 	}
 	public static Mat multiply(Mat img1, Mat img2) {
-		return compressRangeDynamic(new BinaryMultiplication().apply(img1, img2));
+		return new BinaryMultiplication().apply(img1, img2);
 	}
 	public static Mat negative(Mat img) {
 		return new Negative().apply(img);
@@ -451,7 +456,7 @@ public class Util {
 		return channels;
 	}
 	public static Mat sub (Mat img1, Mat img2) {
-		return compressRangeLinear(new BinaryDifference().apply(img1, img2));
+		return new BinaryDifference().apply(img1, img2);
 	}
 	
 	public static Mat umbralize(Mat img, int umbral) {
@@ -661,9 +666,12 @@ public class Util {
 		return result;
 	}
 	public static List<Point>harrisCornerDet(Mat img, double sigma, double threshold) {
+		List<HarrisKeyPoint> keypoints = new ArrayList<HarrisKeyPoint>(100);
+		Mat temp = new Mat(img.size(), CvType.CV_64FC1);
+		monochrome(img).copyTo(temp);
 		List<Point> points = new LinkedList<Point>();
-		Mat dx = new Sobel().apply(img, Direction.HORIZONTAL);
-		Mat dy = new Sobel().apply(img, Direction.VERTICAL);
+		Mat dx = new Sobel().apply(temp, Direction.HORIZONTAL);
+		Mat dy = new Sobel().apply(temp, Direction.VERTICAL);
 		Mat dx2 = multiply(dx, dx);
 		Mat dy2 = multiply(dy, dy);
 		Mat dxy = multiply(dx, dy);
@@ -672,23 +680,36 @@ public class Util {
 		dy2 = g.apply(dy2);
 		dxy = g.apply(dxy);
 		double k = 0.04;
-		for (int i = 0; i < img.width(); i++) {
-			for (int j = 0; j < img.height(); j++) {
-				double[] dx2c = dx2.get(j, i);
-				double[] dy2c = dy2.get(j, i);
-				double[] dxyc = dxy.get(j, i);
-				for (int n = 0; n < img.channels(); n++) {
-					double c = (dx2c[n]*dy2c[n] - Math.pow(dxyc[n], 2)) - k*Math.pow((dx2c[n] + dy2c[n]), 2);
-					if (c > 0 && Math.abs(c) > threshold) {
-						points.add(new Point(i, j));
-						break;
+		for (int i = 0; i < temp.width(); i++) {
+			for (int j = 0; j < temp.height(); j++) {
+				double dx2c, dy2c, dxyc;
+				dx2c = dy2c = dxyc = 0; 
+				for (int x = -1; x <= 1; x++) {
+					for (int y = -1; y<= 1; y++) {
+						dx2c += dx2.get(j, i)[0];
+						dy2c += dy2.get(j, i)[0];
+						dxyc += dxy.get(j, i)[0];
 					}
 				}
+				double r = (dx2c*dy2c - Math.pow(dxyc, 2)) - k*Math.pow((dx2c + dy2c), 2);
+				if (r > 0 && r > threshold)
+ 					keypoints.add(new HarrisKeyPoint(new Point(i, j), r));
 			}
 		}
-		return points;
+		keypoints.sort((kp1, kp2)->(int)-Math.ceil(kp1.getResponse()-kp2.getResponse()));
+		for (int i = 1; i < keypoints.size()-1; i++) {
+			for (int j = i+1; j < keypoints.size();) {
+				if (isNeighbour(keypoints.get(j).getPosition(), keypoints.get(i).getPosition()))
+					keypoints.remove(j);
+				else
+					j++;
+			}
+		}
+		return Arrays.asList(keypoints.stream()
+				.map((kp)->kp.getPosition())
+				.toArray(Point[]::new));
 	}
-	public static List<Mat> SIFT(List<Mat> images) {
+	public static List<Mat> SIFT(List<Mat> images, float threshold) {
 		List<MatOfKeyPoint> keypoints = new LinkedList<MatOfKeyPoint>();
 		LinkedList<Mat> outList = new LinkedList<Mat>();
 		FeatureDetector sift = FeatureDetector.create(org.opencv.features2d.FeatureDetector.ORB);
@@ -698,6 +719,24 @@ public class Util {
 			Features2d.drawKeypoints(images.get(i), keypoints.get(i), outImage);
 			outList.push(outImage);
 		}
+		DescriptorExtractor de = DescriptorExtractor.create(DescriptorExtractor.ORB);
+		List<Mat> descriptors = new LinkedList<Mat>();
+		de.compute(images, keypoints, descriptors);
+		DescriptorMatcher dm = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE);
+		MatOfDMatch matches = new MatOfDMatch();
+		dm.match(descriptors.get(0), descriptors.get(1), matches);
+		int total = 0;
+		int matched = 0;
+		for (DMatch match : matches.toList()) {
+			total++;
+			if (match.distance < threshold)
+				matched++;
+		}
+		System.out.printf("%f%% de coincidencia\n", ((double)matched)/total*100);
+			
 		return outList;
+	}
+	public static boolean isNeighbour(Point p1, Point p2) {
+		return (p2.getX() >= p1.getX()-1 && p2.getX() <= p1.getX()+1) && (p2.getY() >= p1.getY()-1 && p2.getY() <= p1.getY()+1);
 	}
 }

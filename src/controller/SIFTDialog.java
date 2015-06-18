@@ -1,17 +1,15 @@
 package controller;
 
-import static core.Util.*;
+import static core.Util.matToImage;
+import static core.Util.openRaw;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
-import org.opencv.core.Mat;
-import org.opencv.imgcodecs.Imgcodecs;
-
-import core.Util;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -20,39 +18,35 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Pair;
 
-public class BinaryOperationDialog extends Stage {
+import org.opencv.core.Mat;
+import org.opencv.imgcodecs.Imgcodecs;
+
+import core.Util;
+
+public class SIFTDialog extends Stage {
 	private boolean accepted = false;
 	@FXML
-	private ImageView result;
-
-	@FXML
-	private ChoiceBox<String> operation;
-
-	@FXML
 	private ImageView img2;
-
 	@FXML
 	private ImageView img1;
 	
 	private Mat image1;
 	private Mat image2;
-	private Mat resultMat;
 
-	public BinaryOperationDialog(Mat image1) {
-	    FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("BinaryOperationDialog.fxml"));
+	public SIFTDialog(Mat image1) {
+	    FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("SIFTDialog.fxml"));
 	    fxmlLoader.setController(this);
 	    // Nice to have this in a load() method instead of constructor, but this seems to be the convention.
 	    try
@@ -65,15 +59,9 @@ public class BinaryOperationDialog extends Stage {
 	    }
 	    this.image1 = image1;
 		img1.setImage(Util.matToImage(image1));
-		operation.setItems(FXCollections.observableArrayList("Producto", "Suma", "Diferencia"));
-		operation.getSelectionModel().select(0);
-		operation.getSelectionModel().selectedIndexProperty().addListener((ov, value, newValue) -> {doOperation(newValue); result.setImage(matToImage(resultMat));});
 	}
 	public boolean wasAccepted() {
 		return accepted;
-	}
-	public Mat getResult() {
-		return resultMat;
 	}
 	@FXML
 	private void handleCancel(ActionEvent event) {
@@ -81,9 +69,12 @@ public class BinaryOperationDialog extends Stage {
 	}
 
 	@FXML
-	private void handleAccept(ActionEvent event) {
-		accepted = true;
-		this.close();
+	private void handleApply(ActionEvent event) {		
+		List<Mat> results = Util.SIFT(Arrays.asList(new Mat[]{image1, image2}), 200);
+		Mat result1 = results.get(0);
+		Mat result2 = results.get(1);
+		img1.setImage(matToImage(result2));
+		img2.setImage(matToImage(result1));
 	}
 
 	@FXML
@@ -117,10 +108,6 @@ public class BinaryOperationDialog extends Stage {
 			}
 			
 			img2.setImage(matToImage(image2));
-			int selected = operation.getSelectionModel().getSelectedIndex();
-			doOperation(selected);
-			if (resultMat != null)
-				result.setImage(matToImage(resultMat));
 		}
 		catch (IOException e1) {
 			e1.printStackTrace();
@@ -128,20 +115,6 @@ public class BinaryOperationDialog extends Stage {
 	}
 	@FXML
 	public void initialize() {
-	}
-	private void doOperation(Number newValue) {
-		switch (newValue.intValue()) {
-		case 0:
-			resultMat = compressRangeDynamic(multiply(image1, image2));
-			break;
-		case 1:
-			resultMat = compressRangeLinear(add(image1, image2));
-			break;
-		case 2:
-			resultMat = compressRangeLinear(sub(image1, image2));
-		default:
-			break;
-		}
 	}
 	public Pair<Integer, Integer> getTwoInts(String text1, String text2) {
 		// Create the custom dialog.
@@ -191,5 +164,6 @@ public class BinaryOperationDialog extends Stage {
 			return result.get();
 		return null;
 	}
+
 
 }

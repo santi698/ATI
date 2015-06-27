@@ -11,7 +11,7 @@ public abstract class BinaryOperation {
 		if (!img1.size().equals(img2.size())) {
 			throw new RuntimeException();
 		}
-		Mat result = new Mat(img1.height(), img1.width(), CvType.CV_32FC(img1.channels()));
+		Mat result = new Mat(img1.height(), img1.width(), CvType.CV_32SC(img1.channels()));
 		for (int i = 0; i < img1.width(); i++) {
 			for (int j = 0; j < img1.height(); j++) {
 				Color c1 = new Color(img1.get(j, i));

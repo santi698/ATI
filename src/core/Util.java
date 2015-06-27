@@ -52,6 +52,8 @@ import core.masks.LaplacianOfGaussian;
 import core.masks.Means;
 import core.masks.Prewitt;
 import core.masks.Sobel;
+import core.masks.SobelH;
+import core.masks.SobelV;
 import core.masks.UnnamedMask;
 import core.operations.BinaryAddition;
 import core.operations.BinaryDifference;
@@ -289,15 +291,15 @@ public class Util {
 		return new Gaussian(size, sigma).apply(img);
 	}
 	public static Mat generateExponentialNoise(int width, int height, int channels, double lambda) {
-		Mat result = Mat.ones(height, width, CvType.CV_32SC(channels));
+		Mat result = Mat.ones(height, width, CvType.CV_32FC(channels));
 		return addExpNoise(result, lambda);
 	}
 	public static Mat generateGaussianNoise(int width, int height, int channels, double sigma) {
-		Mat result = Mat.zeros(height, width, CvType.CV_32SC(channels));
+		Mat result = Mat.zeros(height, width, CvType.CV_32FC(channels));
 		return addGaussianNoise(result, sigma);
 	}
 	public static Mat generateRayleighNoise(int width, int height, int channels, double psi) {
-		return addRayleighNoise(Mat.ones(height, width, CvType.CV_32SC(channels)), psi);
+		return addRayleighNoise(Mat.ones(height, width, CvType.CV_32FC(channels)), psi);
 	}
 	public static Mat[] getHSV(Mat img) {
 		Mat imgH = new Mat(img.height(), img.width(), CvType.CV_8UC1);
@@ -666,48 +668,52 @@ public class Util {
 		return result;
 	}
 	public static List<Point>harrisCornerDet(Mat img, double sigma, double threshold) {
-		List<HarrisKeyPoint> keypoints = new ArrayList<HarrisKeyPoint>(100);
-		Mat temp = new Mat(img.size(), CvType.CV_64FC1);
+		Mat temp = new Mat(img.size(), CvType.CV_32FC1);
 		monochrome(img).copyTo(temp);
 		List<Point> points = new LinkedList<Point>();
-		Mat dx = new Sobel().apply(temp, Direction.HORIZONTAL);
-		Mat dy = new Sobel().apply(temp, Direction.VERTICAL);
+		Mat dx = new SobelH().apply(temp);
+		Mat dy = new SobelV().apply(temp);
 		Mat dx2 = multiply(dx, dx);
 		Mat dy2 = multiply(dy, dy);
 		Mat dxy = multiply(dx, dy);
-		Gaussian g = new Gaussian(7, sigma);
-		dx2 = g.apply(dx2);
-		dy2 = g.apply(dy2);
-		dxy = g.apply(dxy);
+		Mat rImg = new Mat(img.size(), CvType.CV_32F);
+		if (sigma != 0) {
+			Gaussian g = new Gaussian(7, sigma);
+			dx2 = g.apply(dx2);
+			dy2 = g.apply(dy2);
+			dxy = g.apply(dxy);
+		}
 		double k = 0.04;
-		for (int i = 0; i < temp.width(); i++) {
-			for (int j = 0; j < temp.height(); j++) {
+		for (int i = 1; i < temp.width()-1; i++) {
+			for (int j = 1; j < temp.height()-1; j++) {
 				double dx2c, dy2c, dxyc;
 				dx2c = dy2c = dxyc = 0; 
 				for (int x = -1; x <= 1; x++) {
 					for (int y = -1; y<= 1; y++) {
-						dx2c += dx2.get(j, i)[0];
-						dy2c += dy2.get(j, i)[0];
-						dxyc += dxy.get(j, i)[0];
+						dx2c += dx2.get(j+y, i+x)[0];
+						dy2c += dy2.get(j+y, i+x)[0];
+						dxyc += dxy.get(j+y, i+x)[0];
 					}
 				}
 				double r = (dx2c*dy2c - Math.pow(dxyc, 2)) - k*Math.pow((dx2c + dy2c), 2);
-				if (r > 0 && r > threshold)
- 					keypoints.add(new HarrisKeyPoint(new Point(i, j), r));
+				rImg.put(j,i, new double[]{r});
 			}
 		}
-		keypoints.sort((kp1, kp2)->(int)-Math.ceil(kp1.getResponse()-kp2.getResponse()));
-		for (int i = 1; i < keypoints.size()-1; i++) {
-			for (int j = i+1; j < keypoints.size();) {
-				if (isNeighbour(keypoints.get(j).getPosition(), keypoints.get(i).getPosition()))
-					keypoints.remove(j);
-				else
-					j++;
+		for (int i = 1; i < temp.width()-1; i++) {
+			for (int j = 1; j < temp.height()-1; j++) {
+				double[] centerColor = rImg.get(j, i);
+				boolean isMax = true;
+				for (double[] color : neighbours(rImg, new Point(i,j))) {
+					if (color[0] > centerColor[0]) {
+						isMax = false;
+						break;
+					}
+				}
+				if (isMax && centerColor[0] > threshold)
+					points.add(new Point(i,j));
 			}
 		}
-		return Arrays.asList(keypoints.stream()
-				.map((kp)->kp.getPosition())
-				.toArray(Point[]::new));
+		return points;
 	}
 	public static List<Mat> SIFT(List<Mat> images, float threshold) {
 		List<MatOfKeyPoint> keypoints = new LinkedList<MatOfKeyPoint>();

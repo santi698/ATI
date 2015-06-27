@@ -70,7 +70,7 @@ public class SIFTDialog extends Stage {
 
 	@FXML
 	private void handleApply(ActionEvent event) {		
-		List<Mat> results = Util.SIFT(Arrays.asList(new Mat[]{image1, image2}), 200);
+		List<Mat> results = Util.SIFT(Arrays.asList(new Mat[]{image1, image2}), 400);
 		Mat result1 = results.get(0);
 		Mat result2 = results.get(1);
 		img1.setImage(matToImage(result2));

@@ -104,6 +104,8 @@ import core.hough.HoughResults;
 import core.hough.HoughTridimensional;
 import core.masks.DirectionalMask.Direction;
 import core.masks.Sobel;
+import core.masks.SobelH;
+import core.masks.SobelV;
 import core.masks.Susan;
 
 public class RootLayoutController implements Initializable {
@@ -616,6 +618,12 @@ public class RootLayoutController implements Initializable {
 	public void handleSobel() {
 		showImage(detectBordersSobel(image));
 	}
+	public void handleSobelH() {
+		showImage(compressRangeLinear(new SobelH().apply(image)));
+	}
+	public void handleSobelV() {
+		showImage(compressRangeLinear(new SobelV().apply(image)));
+	}
 	public void handleSobel4() {
 		showImage(detectBordersSobel4D(image));
 	}
@@ -706,6 +714,10 @@ public class RootLayoutController implements Initializable {
         for(Point p: points){
             double[] vec = {255,255,0,255};
             result.put(p.y,p.x,vec);
+            result.put(p.y+1,p.x,vec);
+            result.put(p.y,p.x+1,vec);
+            result.put(p.y-1,p.x,vec);
+            result.put(p.y,p.x-1,vec);
         }
         overlayImageProperty.set(result);
     }

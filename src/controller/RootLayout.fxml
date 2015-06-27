@@ -98,6 +98,8 @@
                 <MenuItem mnemonicParsing="false" onAction="#handleKirsch4" text="Kirsch4" />
                 <MenuItem mnemonicParsing="false" onAction="#handleSobel" text="Sobel" />
                 <MenuItem mnemonicParsing="false" onAction="#handleSobel4" text="Sobel4" />
+                        <MenuItem mnemonicParsing="false" onAction="#handleSobelH" text="Sobel H" />
+                        <MenuItem mnemonicParsing="false" onAction="#handleSobelV" text="Sobel V" />
                 <MenuItem mnemonicParsing="false" onAction="#handlePrewitt" text="Prewitt" />
                 <MenuItem mnemonicParsing="false" onAction="#handlePrewitt4" text="Prewitt4" />
                 <MenuItem mnemonicParsing="false" onAction="#handleLaplacian" text="Laplaciano" />
